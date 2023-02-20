@@ -79,7 +79,6 @@ run-playground:
 	@${GO_PATH} run -race ./cmd/playground
 	#@${GO_PATH} run  ./cmd/playground
 
-.PHONY: git-commit
 ## git-commit: commit all files
 git-commit:
 	@echo "Commit"
@@ -90,7 +89,6 @@ git-push:
 	@echo "Pushing to git main"
 	@git add . ; git commit -m 'auto push'; git push origin main
 
-.PHONY: git-pull
 ## git-pull: pull from main
 git-pull:
 	@echo "Pulling from git main"
