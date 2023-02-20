@@ -85,7 +85,6 @@ git-commit:
 	@echo "Commit"
 	@git add . ; git commit -m 'auto push';
 
-.PHONY: git-push
 ## git-push: push to main
 git-push:
 	@echo "Pushing to git main"
@@ -105,65 +104,3 @@ protos:
 	@mkdir ./protos/goprotos
 	@protoc -I ./protos ./protos/*.proto  --go_out=./protos/goprotos
 	@protoc -I ./protos ./protos/*.proto  --go-grpc_out=require_unimplemented_servers=false:./protos/goprotos
-
-.PHONY: terraform-digitalocean-deploy
-## terraform-digitalocean-deploy: deploy the current plan of terraform on Digitalocean
-terraform-digitalocean-deploy:
-	@echo "Terraform Digitalocean deploying ..."
-	@PROJECT_ABSOLUTE_PATH=${PROJECT_ABSOLUTE_PATH} ./scripts/terraform_digitalocean_deploy.sh
-
-.PHONY: terraform-digitalocean-destroy
-## terraform-digitalocean-destroy: destroy the current plan of terraform on Digitalocean
-terraform-digitalocean-destroy:
-	@echo "Terraform Digitalocean destroying ..."
-	@PROJECT_ABSOLUTE_PATH=${PROJECT_ABSOLUTE_PATH} ./scripts/terraform_digitalocean_destroy.sh
-
-.PHONY: vagrant-deploy
-## vagrant-deploy: deploy the vagrant locally
-vagrant-deploy:
-	@echo "Vagrant deploying locally ..."
-	@cd ./deployment/vagrant/; vagrant up
-
-.PHONY: vagrant-destroy
-## vagrant-destroy: destroy the vagrant locally
-vagrant-destroy:
-	@echo "Vagrant destroy locally ..."
-	@cd ./deployment/vagrant/; vagrant destroy -f
-
-.PHONY: vagrant-suspend
-## vagrant-suspend: suspend the vagrant locally
-vagrant-suspend:
-	@echo "Vagrant suspend locally ..."
-	@cd ./deployment/vagrant/; vagrant suspend
-
-.PHONY: vagrant-resume
-## vagrant-resume: resume the vagrant locally
-vagrant-resume:
-	@echo "Vagrant resume locally ..."
-	@cd ./deployment/vagrant/; vagrant resume
-
-.PHONY: build-deploy-all-remote
-## build-deploy-all-remote: build and deploy remote components using Ansible
-build-deploy-all-remote: build-remote-linux
-	@echo "Running the bash script for building and deploying components ..."
-	@PROJECT_ABSOLUTE_PATH=${PROJECT_ABSOLUTE_PATH} BUILD_MODE="remote" ./scripts/deploy_components.sh
-
-.PHONY: build-deploy-all-local
-## build-deploy-all-local: build and deploy local components using Ansible
-build-deploy-all-local:  build-local-linux
-	@echo "Running the bash script for building and deploying components ..."
-	@PROJECT_ABSOLUTE_PATH=${PROJECT_ABSOLUTE_PATH} BUILD_MODE="local" ./scripts/deploy_components.sh
-
-.PHONY: prepare-remote-linux-env
-## prepare-remote-linux-env: Create the remote linux build env
-prepare-remote-linux-env:
-	@echo "Preparing the remote linux build env ..."
-	@PROJECT_ABSOLUTE_PATH=${PROJECT_ABSOLUTE_PATH} BUILD_MODE="remote" ./scripts/prepare_linux_build_env.sh
-
-.PHONY: prepare-local-vms
-## prepare-local-vms: Install dependencies on local VMs
-prepare-local-vms:
-	@echo "Preparing the local linux build env ..."
-	@PROJECT_ABSOLUTE_PATH=${PROJECT_ABSOLUTE_PATH} BUILD_MODE="local" ./scripts/prepare_linux_build_env.sh
-
-
