@@ -20,7 +20,7 @@ func NewExecutor() *Executor {
 }
 
 func (e *Executor) SendSubscription() {
-	conn, err := e.mdsConnections["localhost"].Get(context.Background())
+	conn, err := e.mdsConnections["127.0.0.1"].Get(context.Background())
 	if conn == nil || err != nil {
 		logger.ErrorLogger.Println(err)
 	}

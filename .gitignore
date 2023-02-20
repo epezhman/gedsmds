@@ -20,6 +20,7 @@ publicKey.pem
 /logs/*
 /certificates/*
 !/certificates/generate_cert.go
+!/certificates/endpoints_local
 ./idea/*
 
 ###################################################

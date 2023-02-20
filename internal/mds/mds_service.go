@@ -2,6 +2,7 @@ package mds
 
 import (
 	"context"
+	"github.com/IBM/gedsmds/internal/logger"
 	"github.com/IBM/gedsmds/internal/mdsprocessor"
 	protos "github.com/IBM/gedsmds/protos/goprotos"
 )
@@ -17,6 +18,7 @@ func NewService() *Service {
 }
 
 func (t *Service) SubscribeBucket(_ context.Context, bucket *protos.BucketEventSubscription) (*protos.BucketEventSubscription, error) {
+	logger.InfoLogger.Println(bucket)
 	return &protos.BucketEventSubscription{
 		BucketId: bucket.BucketId,
 	}, nil

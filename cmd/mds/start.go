@@ -16,7 +16,7 @@ import (
 func main() {
 	cert, _ := filepath.Abs("./configs/cert.pem")
 	key, _ := filepath.Abs("./configs/key.pem")
-	lis, err := net.Listen("tcp", config.Config.MDSServerPort)
+	lis, err := net.Listen("tcp", config.Config.MDSPort)
 	if err != nil {
 		logger.FatalLogger.Fatalln(err)
 	}
@@ -29,7 +29,7 @@ func main() {
 	grpcServer := grpc.NewServer(opts...)
 	serviceInstance := mds.NewService()
 	protos.RegisterMDSServiceServer(grpcServer, serviceInstance)
-	logger.InfoLogger.Println("Transaction Server is listening on port", config.Config.MDSServerPort)
+	logger.InfoLogger.Println("Transaction Server is listening on port", config.Config.MDSPort)
 	err = grpcServer.Serve(lis)
 	if err != nil {
 		logger.FatalLogger.Fatalln(err)

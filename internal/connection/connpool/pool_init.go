@@ -26,7 +26,7 @@ func factoryNode(ip string) (*grpc.ClientConn, error) {
 		grpc.WithDefaultCallOptions(grpc.UseCompressor("gzip")),
 		// https://chromium.googlesource.com/external/github.com/grpc/grpc-go/+/HEAD/Documentation/encoding.md
 	}
-	conn, err := grpc.Dial(ip+config.Config.MDSServerPort, opts...)
+	conn, err := grpc.Dial(ip+config.Config.MDSPort, opts...)
 	if err != nil {
 		logger.FatalLogger.Fatalln("Failed to start gRPC connection:", err)
 	}
@@ -35,7 +35,7 @@ func factoryNode(ip string) (*grpc.ClientConn, error) {
 
 func GetMDSConnectionsStream() map[string]*Pool {
 	serverPool := make(map[string]*Pool)
-	name := "localhost"
+	name := "127.0.0.1"
 	pool, err := NewPoolWithIP(factoryNode, name, 1, 1, 10*time.Second)
 	if err != nil {
 		logger.FatalLogger.Fatalln("Failed to create gRPC pool:", err)

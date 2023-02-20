@@ -54,25 +54,16 @@ build-mds:
 	@echo "Building MDS ..."
 	@${GO_PATH} build -o ${MDS_BUILD_PATH}${MDS_BINARY} ./cmd/mds
 
-.PHONY: build-remote-linux
-## build-remote-linux: build for remote Linux on Darwin
-build-remote-linux:
-	@echo "Building the components on the build remote system..."
-	@PROJECT_ABSOLUTE_PATH=${PROJECT_ABSOLUTE_PATH} BUILD_MODE="remote" ./scripts/build_on_linux.sh
-
-.PHONY: build-local-linux
-## build-local-linux: build for local Linux on Darwin
-build-local-linux:
-	@echo "Building the components on the build local system..."
-	@PROJECT_ABSOLUTE_PATH=${PROJECT_ABSOLUTE_PATH} BUILD_MODE="local" ./scripts/build_on_linux.sh
-
-.PHONY: run-mds
 ## run-mds: run the MDS component
 run-mds:
 	@echo "Running MDS ..."
 	@${GO_PATH} run ./cmd/mds
 
-.PHONY: run-playground
+## run-mock-client: run the MockClient
+run-mock-client:
+	@echo "Running Mock-Client ..."
+	@${GO_PATH} run ./cmd/mockclient
+
 ## run-playground: run some experimental codes in ./cmd/playground
 run-playground:
 	@echo "Running Playground ..."
@@ -102,3 +93,9 @@ protos:
 	@mkdir ./protos/goprotos
 	@protoc -I ./protos ./protos/*.proto  --go_out=./protos/goprotos
 	@protoc -I ./protos ./protos/*.proto  --go-grpc_out=require_unimplemented_servers=false:./protos/goprotos
+
+.PHONY: create-certificates
+## create-certificates: create certificates
+create-certificates:
+	@echo "Creating the certificates and keys ..."
+	@PROJECT_ABSOLUTE_PATH=${PROJECT_ABSOLUTE_PATH} ./scripts/create_certificates.sh
