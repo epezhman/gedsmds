@@ -18,8 +18,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MDSServiceClient interface {
-	StopAndGetProfilingResult(ctx context.Context, in *Profiling, opts ...grpc.CallOption) (MDSService_StopAndGetProfilingResultClient, error)
-	SubscribeBucket(ctx context.Context, in *BucketEventSubscription, opts ...grpc.CallOption) (*Empty, error)
+	SubscribeBucket(ctx context.Context, in *BucketEventSubscription, opts ...grpc.CallOption) (*BucketEventSubscription, error)
 }
 
 type mDSServiceClient struct {
@@ -30,40 +29,8 @@ func NewMDSServiceClient(cc grpc.ClientConnInterface) MDSServiceClient {
 	return &mDSServiceClient{cc}
 }
 
-func (c *mDSServiceClient) StopAndGetProfilingResult(ctx context.Context, in *Profiling, opts ...grpc.CallOption) (MDSService_StopAndGetProfilingResultClient, error) {
-	stream, err := c.cc.NewStream(ctx, &MDSService_ServiceDesc.Streams[0], "/protos.MDSService/StopAndGetProfilingResult", opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &mDSServiceStopAndGetProfilingResultClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-type MDSService_StopAndGetProfilingResultClient interface {
-	Recv() (*ProfilingResult, error)
-	grpc.ClientStream
-}
-
-type mDSServiceStopAndGetProfilingResultClient struct {
-	grpc.ClientStream
-}
-
-func (x *mDSServiceStopAndGetProfilingResultClient) Recv() (*ProfilingResult, error) {
-	m := new(ProfilingResult)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func (c *mDSServiceClient) SubscribeBucket(ctx context.Context, in *BucketEventSubscription, opts ...grpc.CallOption) (*Empty, error) {
-	out := new(Empty)
+func (c *mDSServiceClient) SubscribeBucket(ctx context.Context, in *BucketEventSubscription, opts ...grpc.CallOption) (*BucketEventSubscription, error) {
+	out := new(BucketEventSubscription)
 	err := c.cc.Invoke(ctx, "/protos.MDSService/SubscribeBucket", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -75,18 +42,14 @@ func (c *mDSServiceClient) SubscribeBucket(ctx context.Context, in *BucketEventS
 // All implementations should embed UnimplementedMDSServiceServer
 // for forward compatibility
 type MDSServiceServer interface {
-	StopAndGetProfilingResult(*Profiling, MDSService_StopAndGetProfilingResultServer) error
-	SubscribeBucket(context.Context, *BucketEventSubscription) (*Empty, error)
+	SubscribeBucket(context.Context, *BucketEventSubscription) (*BucketEventSubscription, error)
 }
 
 // UnimplementedMDSServiceServer should be embedded to have forward compatible implementations.
 type UnimplementedMDSServiceServer struct {
 }
 
-func (UnimplementedMDSServiceServer) StopAndGetProfilingResult(*Profiling, MDSService_StopAndGetProfilingResultServer) error {
-	return status.Errorf(codes.Unimplemented, "method StopAndGetProfilingResult not implemented")
-}
-func (UnimplementedMDSServiceServer) SubscribeBucket(context.Context, *BucketEventSubscription) (*Empty, error) {
+func (UnimplementedMDSServiceServer) SubscribeBucket(context.Context, *BucketEventSubscription) (*BucketEventSubscription, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SubscribeBucket not implemented")
 }
 
@@ -99,27 +62,6 @@ type UnsafeMDSServiceServer interface {
 
 func RegisterMDSServiceServer(s grpc.ServiceRegistrar, srv MDSServiceServer) {
 	s.RegisterService(&MDSService_ServiceDesc, srv)
-}
-
-func _MDSService_StopAndGetProfilingResult_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(Profiling)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(MDSServiceServer).StopAndGetProfilingResult(m, &mDSServiceStopAndGetProfilingResultServer{stream})
-}
-
-type MDSService_StopAndGetProfilingResultServer interface {
-	Send(*ProfilingResult) error
-	grpc.ServerStream
-}
-
-type mDSServiceStopAndGetProfilingResultServer struct {
-	grpc.ServerStream
-}
-
-func (x *mDSServiceStopAndGetProfilingResultServer) Send(m *ProfilingResult) error {
-	return x.ServerStream.SendMsg(m)
 }
 
 func _MDSService_SubscribeBucket_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -152,12 +94,6 @@ var MDSService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _MDSService_SubscribeBucket_Handler,
 		},
 	},
-	Streams: []grpc.StreamDesc{
-		{
-			StreamName:    "StopAndGetProfilingResult",
-			Handler:       _MDSService_StopAndGetProfilingResult_Handler,
-			ServerStreams: true,
-		},
-	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "transaction.proto",
 }

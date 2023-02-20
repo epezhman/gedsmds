@@ -1,4 +1,4 @@
-module github.com/IBM/gedsMDS
+module github.com/IBM/gedsmds
 
 go 1.20
 

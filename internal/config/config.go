@@ -1,8 +1,7 @@
 package config
 
 import (
-	"github.com/IBM/gedsMDS/internal/logger"
-	"github.com/IBM/gedsMDS/internal/profiling"
+	"github.com/IBM/gedsmds/internal/logger"
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
 )
@@ -10,11 +9,8 @@ import (
 var Config *Configuration
 
 type Configuration struct {
-	UUID                string `mapstructure:"UUID"`
-	TargetSystem        string `mapstructure:"TARGET_SYSTEM"`
-	MDSServerPort       string `mapstructure:"TRANSACTION_SERVER_PORT"`
-	ProfilingServerPort string `mapstructure:"PROFILING_SERVER_PORT"`
-	ProfilingEnabled    string `mapstructure:"PROFILING_ENABLED"`
+	UUID          string `mapstructure:"UUID"`
+	MDSServerPort string `mapstructure:"TRANSACTION_SERVER_PORT"`
 }
 
 func init() {
@@ -45,15 +41,6 @@ func LoadConfig() (*Configuration, error) {
 	err = viper.Unmarshal(config)
 	if err != nil {
 		return &Configuration{}, err
-	}
-	if config.ProfilingEnabled == "enable_server" {
-		profiling.StartProfilingServer(config.ProfilingServerPort)
-	} else if config.ProfilingEnabled == "cpu" {
-		profiling.StartCPUProfiling()
-	} else if config.ProfilingEnabled == "memory" {
-		profiling.StartMemoryProfiling()
-	} else if config.ProfilingEnabled == "bandwidth" {
-		profiling.StartBandWithProfiling()
 	}
 	return config, nil
 }

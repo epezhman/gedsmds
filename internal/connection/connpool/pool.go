@@ -5,7 +5,7 @@ package connpool
 import (
 	"context"
 	"errors"
-	"github.com/IBM/gedsMDS/internal/logger"
+	"github.com/IBM/gedsmds/internal/logger"
 	"sync"
 	"time"
 

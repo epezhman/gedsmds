@@ -68,7 +68,7 @@ build-local-linux:
 
 .PHONY: run-mds
 ## run-mds: run the MDS component
-run-node:
+run-mds:
 	@echo "Running MDS ..."
 	@${GO_PATH} run ./cmd/mds
 
@@ -76,8 +76,8 @@ run-node:
 ## run-playground: run some experimental codes in ./cmd/playground
 run-playground:
 	@echo "Running Playground ..."
-#	@${GO_PATH} run -race ./cmd/playground
-	@${GO_PATH} run  ./cmd/playground
+	@${GO_PATH} run -race ./cmd/playground
+	#@${GO_PATH} run  ./cmd/playground
 
 .PHONY: git-commit
 ## git-commit: commit all files
@@ -86,16 +86,16 @@ git-commit:
 	@git add . ; git commit -m 'auto push';
 
 .PHONY: git-push
-## git-push: push to master
+## git-push: push to main
 git-push:
-	@echo "Pushing to git master"
-	@git add . ; git commit -m 'auto push'; git push origin master
+	@echo "Pushing to git main"
+	@git add . ; git commit -m 'auto push'; git push origin main
 
 .PHONY: git-pull
-## git-pull: pull from master
+## git-pull: pull from main
 git-pull:
-	@echo "Pulling from git master"
-	@git pull origin master
+	@echo "Pulling from git main"
+	@git pull origin main
 
 .PHONY: protos
 ## protos: generate the protos
@@ -166,40 +166,4 @@ prepare-local-vms:
 	@echo "Preparing the local linux build env ..."
 	@PROJECT_ABSOLUTE_PATH=${PROJECT_ABSOLUTE_PATH} BUILD_MODE="local" ./scripts/prepare_linux_build_env.sh
 
-.PHONY: build-docker-images
-## build-docker-images: build docker images
-build-docker-images:
-	@echo "Building Docker images ..."
-	@docker build --force-rm -t ${DOCKER_NS_ENV}/geds-mds -f ./deployment/docker/images/mds.dockerfile .
-	@docker tag ${DOCKER_NS_ENV}/geds-node ${DOCKER_NS_ENV}/crdtchain-mds:${DOCKER_TAG_ENV}
 
-.PHONY: push-docker-images
-## push-docker-images: push docker images
-push-docker-images:
-	@echo "Pushing Docker images ..."
-	@docker login --username ${DOCKER_USERNAME_ENV} --password ${DOCKER_PASSWORD_ENV}
-	@docker push ${DOCKER_NS_ENV}/geds-mds:${DOCKER_TAG_ENV}
-
-.PHONY: install-local-docker
-## install-local-docker: Install local docker
-install-local-docker:
-	@echo "Installing dockers locally ..."
-	@PROJECT_ABSOLUTE_PATH=${PROJECT_ABSOLUTE_PATH} BUILD_MODE="local" ./scripts/install_docker.sh
-
-.PHONY: install-remote-docker
-## install-remote-docker: Install remote docker
-install-remote-docker:
-	@echo "Installing dockers remote ..."
-	@PROJECT_ABSOLUTE_PATH=${PROJECT_ABSOLUTE_PATH} BUILD_MODE="remote" ./scripts/install_docker.sh
-
-.PHONY: build-deploy-all-remote-docker
-## build-deploy-all-remote-docker: build and deploy remote components using Ansible and Docker
-build-deploy-all-remote-docker:build-docker-images push-docker-images
-	@echo "Running the bash script for building and deploying components ..."
-	@PROJECT_ABSOLUTE_PATH=${PROJECT_ABSOLUTE_PATH} BUILD_MODE="remote" ./scripts/deploy_components_with_dcoker.sh
-
-.PHONY: build-deploy-all-local-docker
-## build-deploy-all-local-docker: build and deploy local components using Ansible and Docker
-build-deploy-all-local-docker: build-docker-images push-docker-images
-	@echo "Running the bash script for building and deploying components ..."
-	@PROJECT_ABSOLUTE_PATH=${PROJECT_ABSOLUTE_PATH} BUILD_MODE="local" ./scripts/deploy_components_with_dcoker.sh

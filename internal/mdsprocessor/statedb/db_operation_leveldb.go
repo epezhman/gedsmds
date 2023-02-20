@@ -1,7 +1,7 @@
 package statedb
 
 import (
-	"github.com/IBM/gedsMDS/internal/logger"
+	"github.com/IBM/gedsmds/internal/logger"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
@@ -20,7 +20,6 @@ type ByteContainers struct {
 }
 
 // NewOperations Possible optimization for LevelDB: https://github.com/google/leveldb/blob/master/doc/index.md
-// Comparison of LevelDB to SQLite http://www.lmdb.tech/bench/microbench/benchmark.html
 func NewOperations(contractName string) *Operations {
 	tempDB, err := leveldb.OpenFile(dbsLocation+contractName, nil)
 	if err != nil {

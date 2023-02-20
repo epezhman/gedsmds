@@ -1,7 +1,7 @@
 package profiling
 
 import (
-	"github.com/IBM/gedsMDS/internal/logger"
+	"github.com/IBM/gedsmds/internal/logger"
 	"github.com/pkg/profile"
 	"net/http"
 	//_ "net/http/pprof"
@@ -18,7 +18,6 @@ var (
 )
 
 // For Profiling in the experiment's config file, set either profiling: enable_server or profiling: cpu or profiling: memory or profiling: bandwidth
-// ALSO profilingComponents: node|client|orderer
 
 func StartCPUProfiling() {
 	logger.WarningLogger.Println("Running CPU Profiling!")
@@ -48,7 +47,7 @@ func StartBandWithProfiling() {
 }
 
 func StartProfilingServer(profilingPort string) {
-	logger.WarningLogger.Println("Application Profiling Server is Running!")
+	logger.WarningLogger.Println("MDS Profiling is Running!")
 	go func(port string) {
 		if err := http.ListenAndServe(port, nil); err != nil {
 			logger.ErrorLogger.Println(err)

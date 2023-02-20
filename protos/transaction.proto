@@ -3,15 +3,10 @@ syntax = "proto3";
 package protos;
 option go_package = "./;protos";
 
-import "shared.proto";
-
 message BucketEventSubscription {
   string bucket_id = 1;
 }
 
 service MDSService {
-  rpc StopAndGetProfilingResult (Profiling) returns (stream ProfilingResult);
-
-  rpc SubscribeBucket (BucketEventSubscription) returns (Empty);
-
+  rpc SubscribeBucket (BucketEventSubscription) returns (BucketEventSubscription);
 }

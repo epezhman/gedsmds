@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/IBM/gedsMDS/internal/config"
-	"github.com/IBM/gedsMDS/internal/connection/serverconfig"
-	"github.com/IBM/gedsMDS/internal/logger"
-	"github.com/IBM/gedsMDS/internal/mds"
-	protos "github.com/IBM/gedsMDS/protos/goprotos"
+	"github.com/IBM/gedsmds/internal/config"
+	"github.com/IBM/gedsmds/internal/connection/serverconfig"
+	"github.com/IBM/gedsmds/internal/logger"
+	"github.com/IBM/gedsmds/internal/mds"
+	protos "github.com/IBM/gedsmds/protos/goprotos"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	_ "google.golang.org/grpc/encoding/gzip"

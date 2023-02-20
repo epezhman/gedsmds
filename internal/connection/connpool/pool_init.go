@@ -2,9 +2,9 @@ package connpool
 
 import (
 	"crypto/tls"
-	"github.com/IBM/gedsMDS/internal/config"
-	"github.com/IBM/gedsMDS/internal/customcrypto/certificates"
-	"github.com/IBM/gedsMDS/internal/logger"
+	"github.com/IBM/gedsmds/internal/config"
+	"github.com/IBM/gedsmds/internal/customcrypto/certificates"
+	"github.com/IBM/gedsmds/internal/logger"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
@@ -31,4 +31,19 @@ func factoryNode(ip string) (*grpc.ClientConn, error) {
 		logger.FatalLogger.Fatalln("Failed to start gRPC connection:", err)
 	}
 	return conn, err
+}
+
+func GetMDSConnectionsStream() map[string]*Pool {
+	serverPool := make(map[string]*Pool)
+	name := "localhost"
+	pool, err := NewPoolWithIP(factoryNode, name, 1, 1, 10*time.Second)
+	if err != nil {
+		logger.FatalLogger.Fatalln("Failed to create gRPC pool:", err)
+	}
+	serverPool[name] = pool
+	return serverPool
+}
+
+func SleepAndContinue() {
+	time.Sleep(2 * time.Second)
 }
