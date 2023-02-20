@@ -1,0 +1,35 @@
+# Building the System
+
+## Used Technologies
+
+1. go version go1.16.3 darwin/amd64
+2. mattn/go-sqlite3 v1.14.7
+3. protoc libprotoc v3.15.8 
+4. ansible v2.10.7
+5. terraform v1.0
+
+## Building
+
+We use Makefile for building and running everything. Do a ``make help`` to see all the available commands. 
+
+## Protobuf on MAC
+1. brew install protobuf
+2. go get -u github.com/golang/protobuf/{proto,protoc-gen-go}
+3. Add the go path to the environment profile when needed
+
+# Steps required on a fresh system
+
+1. Create ssh keys for the new system created. 
+2. Clone everything: `git clone --recursive git@gitlab.i13.in.tum.de:crdtchain/crdtchain.git`
+3. Copy env.secret 'cp  env.secret env' and set at least OPENSTACK_PASSWORD_INPUT and PROJECT_ABSOLUTE_PATH
+4. Install go version 1.16.3: https://tecadmin.net/how-to-install-go-on-ubuntu-20-04/
+5. Install ansible 2.9.24: https://docs.w3cub.com/ansible~2.10/installation_guide/intro_installation#installing-ansible-on-ubuntu (pay attention to correct ansible version)
+6. Install terraform: https://www.terraform.io/docs/cli/install/apt.html
+7. If necessary install  protoc libprotoc and mattn/go-sqlite3
+8. Tidy go mod: `make tidy`
+9. Do a `make build` to see if everything is installed alright
+10. Follow the deployment.md to set up Terraform and Ansible
+11. Do a `make terraform-deploy` to see a  network can be created
+12. Do a `make prepare-remote-vms` to prepare the VMs. 
+13. Do a `make build-deploy-run-experiment-remote` to see if it builds and run example correctly (before `cp app.env.secret app.env` in config)
+14. Cluster has a bug. If VMs are not reachable, delete one from cluster and 

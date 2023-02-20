@@ -1,0 +1,38 @@
+version: "3.9"
+services:
+  node:
+    container_name: crdtchainnode
+    image: epezhman/crdtchain-node:latest
+    restart: always
+    logging:
+      driver: journald
+    ports:
+      - "9000:9000"
+      - "9003:9003"
+      - "6060:6060"
+    volumes:
+      - /home/ubuntu/node/logs:/node/logs
+      - /home/ubuntu/node/data:/node/data
+      - /home/ubuntu/node/configs:/node/configs
+    #    networks:
+    #      - crdtchain-network
+    #    depends_on:
+    #      - federated
+    #  federated:
+    #    build: .
+    #    networks:
+    #      - crdtchain-network
+    #
+    #networks:
+    #  crdtchain-network:
+    #    driver: bridge
+    #
+    #    build:
+    #      context: .
+    #      dockerfile: node.dockerfile
+    #    deploy:
+    #      restart_policy:
+    #        condition: on-failure
+    #        delay: 1s
+    #        max_attempts: 5
+    #        window: 10s
