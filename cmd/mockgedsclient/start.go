@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/IBM/gedsmds/internal/mockclient"
+	"github.com/IBM/gedsmds/internal/mockgedsclient"
 	//_ "google.golang.org/grpc/encoding/gzip"
 )
 
 func main() {
-	ex := mockclient.NewExecutor()
+	ex := mockgedsclient.NewExecutor()
 	ex.SendSubscription()
 }

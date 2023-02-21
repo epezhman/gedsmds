@@ -2,6 +2,7 @@ package mds
 
 import (
 	"context"
+	"github.com/IBM/gedsmds/internal/connection/connpool"
 	"github.com/IBM/gedsmds/internal/logger"
 	"github.com/IBM/gedsmds/internal/mdsprocessor"
 	"github.com/IBM/gedsmds/protos/protos"
@@ -18,7 +19,8 @@ func NewService() *Service {
 }
 
 func (t *Service) GetConnectionInformation(_ context.Context, _ *protos.EmptyParams) (*protos.ConnectionInformation, error) {
-	logger.InfoLogger.Println("Got something")
+	currentIP := connpool.GetOutboundIP()
+	logger.InfoLogger.Println("Found my IP:", currentIP)
 	return &protos.ConnectionInformation{
 		RemoteAddress: "127.0.0.1",
 	}, nil

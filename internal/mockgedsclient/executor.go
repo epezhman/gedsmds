@@ -1,4 +1,4 @@
-package mockclient
+package mockgedsclient
 
 import (
 	"context"
