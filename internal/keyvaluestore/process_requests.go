@@ -82,7 +82,7 @@ func (kv *KeyValueStore) ListBuckets() (*protos.BucketListResponse, error) {
 }
 
 func (kv *KeyValueStore) LookupBucket(bucket *protos.Bucket) error {
-	kv.kvBucketLock.RUnlock()
+	kv.kvBucketLock.RLock()
 	defer kv.kvBucketLock.RUnlock()
 	if _, ok := kv.kvBucket[bucket.Bucket]; !ok {
 		return errors.New("bucket does not exist")
@@ -91,7 +91,7 @@ func (kv *KeyValueStore) LookupBucket(bucket *protos.Bucket) error {
 }
 
 func (kv *KeyValueStore) LookupBucketByName(bucketName string) error {
-	kv.kvBucketLock.RUnlock()
+	kv.kvBucketLock.RLock()
 	defer kv.kvBucketLock.RUnlock()
 	if _, ok := kv.kvBucket[bucketName]; !ok {
 		return errors.New("bucket does not exist")
@@ -137,7 +137,7 @@ func (kv *KeyValueStore) DeleteObjectPrefix(_ *protos.ObjectID) error {
 }
 
 func (kv *KeyValueStore) LookupObject(objectID *protos.ObjectID) (*protos.ObjectResponse, error) {
-	kv.kvObjectsLock.RUnlock()
+	kv.kvObjectsLock.RLock()
 	defer kv.kvObjectsLock.RUnlock()
 	if _, ok := kv.kvObjectsMap[objectID.Key]; !ok {
 		return nil, errors.New("object does not exist")
