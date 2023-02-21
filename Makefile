@@ -6,6 +6,7 @@ GO_PATH := $(shell which go)
 
 ifeq ($(UNAME), Linux)
 MDS_BUILD_PATH = ${MDS_BUILD_PATH_LINUX}
+GO_PATH = ${GO_PATH_LINUX}
 SOURCE = .
 endif
 
