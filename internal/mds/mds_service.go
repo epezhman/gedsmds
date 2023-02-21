@@ -84,19 +84,28 @@ func (s *Service) Delete(_ context.Context, objectID *protos.ObjectID) (*protos.
 	return &protos.StatusResponse{Code: protos.StatusCode_OK}, nil
 }
 
-func (s *Service) DeletePrefix(_ context.Context, objectID *protos.ObjectID) (*protos.StatusResponse, error) {
+func (s *Service) DeletePrefix(_ context.Context, _ *protos.ObjectID) (*protos.StatusResponse, error) {
 	return &protos.StatusResponse{Code: protos.StatusCode_UNIMPLEMENTED}, nil
 }
 
 func (s *Service) Lookup(_ context.Context, objectID *protos.ObjectID) (*protos.ObjectResponse, error) {
 	object, err := s.kvStore.LookupObject(objectID)
 	if err != nil {
-		return &protos.ObjectResponse{Error: &protos.StatusResponse{Code: protos.StatusCode_NOT_FOUND}}, err
+		return &protos.ObjectResponse{
+			Error: &protos.StatusResponse{Code: protos.StatusCode_NOT_FOUND},
+		}, err
 	}
 	object.Error = &protos.StatusResponse{Code: protos.StatusCode_OK}
 	return object, nil
 }
 
 func (s *Service) List(_ context.Context, _ *protos.ObjectListRequest) (*protos.ObjectListResponse, error) {
-	return &protos.ObjectListResponse{Error: &protos.StatusResponse{Code: protos.StatusCode_NOT_FOUND}}, nil
+	return &protos.ObjectListResponse{
+		Error: &protos.StatusResponse{Code: protos.StatusCode_NOT_FOUND},
+	}, nil
+}
+
+func (s *Service) TestRPC(_ context.Context, conn *protos.ConnectionInformation) (*protos.ConnectionInformation, error) {
+	logger.InfoLogger.Println("Got this:", conn.RemoteAddress)
+	return &protos.ConnectionInformation{RemoteAddress: conn.RemoteAddress}, nil
 }

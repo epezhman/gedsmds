@@ -31,6 +31,7 @@ type MetadataServiceClient interface {
 	DeletePrefix(ctx context.Context, in *ObjectID, opts ...grpc.CallOption) (*StatusResponse, error)
 	Lookup(ctx context.Context, in *ObjectID, opts ...grpc.CallOption) (*ObjectResponse, error)
 	List(ctx context.Context, in *ObjectListRequest, opts ...grpc.CallOption) (*ObjectListResponse, error)
+	TestRPC(ctx context.Context, in *ConnectionInformation, opts ...grpc.CallOption) (*ConnectionInformation, error)
 }
 
 type metadataServiceClient struct {
@@ -158,6 +159,15 @@ func (c *metadataServiceClient) List(ctx context.Context, in *ObjectListRequest,
 	return out, nil
 }
 
+func (c *metadataServiceClient) TestRPC(ctx context.Context, in *ConnectionInformation, opts ...grpc.CallOption) (*ConnectionInformation, error) {
+	out := new(ConnectionInformation)
+	err := c.cc.Invoke(ctx, "/geds.rpc.MetadataService/TestRPC", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MetadataServiceServer is the server API for MetadataService service.
 // All implementations should embed UnimplementedMetadataServiceServer
 // for forward compatibility
@@ -175,6 +185,7 @@ type MetadataServiceServer interface {
 	DeletePrefix(context.Context, *ObjectID) (*StatusResponse, error)
 	Lookup(context.Context, *ObjectID) (*ObjectResponse, error)
 	List(context.Context, *ObjectListRequest) (*ObjectListResponse, error)
+	TestRPC(context.Context, *ConnectionInformation) (*ConnectionInformation, error)
 }
 
 // UnimplementedMetadataServiceServer should be embedded to have forward compatible implementations.
@@ -219,6 +230,9 @@ func (UnimplementedMetadataServiceServer) Lookup(context.Context, *ObjectID) (*O
 }
 func (UnimplementedMetadataServiceServer) List(context.Context, *ObjectListRequest) (*ObjectListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
+}
+func (UnimplementedMetadataServiceServer) TestRPC(context.Context, *ConnectionInformation) (*ConnectionInformation, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TestRPC not implemented")
 }
 
 // UnsafeMetadataServiceServer may be embedded to opt out of forward compatibility for this service.
@@ -466,6 +480,24 @@ func _MetadataService_List_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MetadataService_TestRPC_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ConnectionInformation)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetadataServiceServer).TestRPC(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/geds.rpc.MetadataService/TestRPC",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetadataServiceServer).TestRPC(ctx, req.(*ConnectionInformation))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // MetadataService_ServiceDesc is the grpc.ServiceDesc for MetadataService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -524,6 +556,10 @@ var MetadataService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "List",
 			Handler:    _MetadataService_List_Handler,
+		},
+		{
+			MethodName: "TestRPC",
+			Handler:    _MetadataService_TestRPC_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

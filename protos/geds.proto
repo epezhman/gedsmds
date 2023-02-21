@@ -81,6 +81,7 @@ service MetadataService {
   rpc DeletePrefix(ObjectID) returns (StatusResponse);
   rpc Lookup(ObjectID) returns (ObjectResponse);
   rpc List(ObjectListRequest) returns (ObjectListResponse);
+  rpc TestRPC(ConnectionInformation) returns (ConnectionInformation);
 }
 
 enum FileTransferProtocol {
