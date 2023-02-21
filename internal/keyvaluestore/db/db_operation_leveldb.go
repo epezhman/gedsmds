@@ -1,11 +1,11 @@
-package statedb
+package db
 
 import (
 	"github.com/IBM/gedsmds/internal/logger"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
-const dbsLocation = "./data/state_"
+const dbsLocation = "./data/state_mds"
 
 type Operations struct {
 	db *leveldb.DB
@@ -20,8 +20,8 @@ type ByteContainers struct {
 }
 
 // NewOperations Possible optimization for LevelDB: https://github.com/google/leveldb/blob/master/doc/index.md
-func NewOperations(contractName string) *Operations {
-	tempDB, err := leveldb.OpenFile(dbsLocation+contractName, nil)
+func NewOperations() *Operations {
+	tempDB, err := leveldb.OpenFile(dbsLocation, nil)
 	if err != nil {
 		logger.FatalLogger.Fatalln(err)
 	}

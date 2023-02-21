@@ -7,6 +7,7 @@ require (
 	github.com/pkg/profile v1.7.0
 	github.com/spf13/viper v1.15.0
 	github.com/syndtr/goleveldb v1.0.0
+	golang.org/x/exp v0.0.0-20230213192124-5e25df0256eb
 	google.golang.org/grpc v1.53.0
 	google.golang.org/protobuf v1.28.1
 )
