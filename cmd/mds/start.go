@@ -29,8 +29,8 @@ func main() {
 		grpc.KeepaliveParams(serverconfig.KASP)}
 	grpcServer := grpc.NewServer(opts...)
 	serviceInstance := mds.NewService()
-	protos.RegisterMDSServiceServer(grpcServer, serviceInstance)
-	logger.InfoLogger.Println("Transaction Server is listening on port", config.Config.MDSPort)
+	protos.RegisterMetadataServiceServer(grpcServer, serviceInstance)
+	logger.InfoLogger.Println("Metadata Server is listening on port", config.Config.MDSPort)
 	err = grpcServer.Serve(lis)
 	if err != nil {
 		logger.FatalLogger.Fatalln(err)

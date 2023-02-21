@@ -90,10 +90,10 @@ git-pull:
 ## protos: generate the protos
 protos:
 	@echo "Generating the Protos ..."
-	@rm -rf ./protos/goprotos;
-	@mkdir ./protos/goprotos
-	@protoc -I ./protos ./protos/*.proto  --go_out=./protos/goprotos
-	@protoc -I ./protos ./protos/*.proto  --go-grpc_out=require_unimplemented_servers=false:./protos/goprotos
+	@rm -rf ./protos/protos;
+	@mkdir ./protos/protos
+	@protoc -I ./protos ./protos/*.proto  --go_out=./protos/protos
+	@protoc -I ./protos ./protos/*.proto  --go-grpc_out=require_unimplemented_servers=false:./protos/protos
 
 .PHONY: create-certificates
 ## create-certificates: create certificates

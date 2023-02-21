@@ -24,12 +24,12 @@ func (e *Executor) SendSubscription() {
 	if conn == nil || err != nil {
 		logger.ErrorLogger.Println(err)
 	}
-	client := protos.NewMDSServiceClient(conn.ClientConn)
-	result, err := client.SubscribeBucket(context.Background(), &protos.BucketEventSubscription{BucketId: "test"})
+	client := protos.NewMetadataServiceClient(conn.ClientConn)
+	result, err := client.Create(context.Background(), &protos.Object{Id: &protos.ObjectID{Key: "test"}})
 	if err != nil {
 		logger.ErrorLogger.Println(err)
 	}
-	logger.InfoLogger.Println(result)
+	logger.InfoLogger.Println(result.Code)
 	if errCon := conn.Close(); errCon != nil {
 		logger.ErrorLogger.Println(errCon)
 	}

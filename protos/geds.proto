@@ -11,15 +11,6 @@ option go_package = "./;protos";
 import "status.proto";
 
 
-message BucketEventSubscription {
-  string bucket_id = 1;
-}
-
-service MDSService {
-  rpc SubscribeBucket (BucketEventSubscription) returns (BucketEventSubscription);
-}
-
-
 message EmptyParams {
   // Empty
 }
