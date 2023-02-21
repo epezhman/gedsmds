@@ -1,12 +1,10 @@
 package connpool
 
 import (
-	"crypto/tls"
 	"github.com/IBM/gedsmds/internal/config"
-	"github.com/IBM/gedsmds/internal/customcrypto/certificates"
 	"github.com/IBM/gedsmds/internal/logger"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
 	"time"
 )
@@ -18,13 +16,15 @@ var KACP = keepalive.ClientParameters{
 }
 
 func factoryNode(ip string) (*grpc.ClientConn, error) {
-	configTLS := &tls.Config{
-		InsecureSkipVerify: false,
-		RootCAs:            certificates.CAs,
-	}
-	opts := []grpc.DialOption{grpc.WithTransportCredentials(credentials.NewTLS(configTLS)), grpc.WithKeepaliveParams(KACP)}//grpc.WithDefaultCallOptions(grpc.UseCompressor("gzip")),
-	// https://chromium.googlesource.com/external/github.com/grpc/grpc-go/+/HEAD/Documentation/encoding.md
-
+	//configTLS := &tls.Config{
+	//	InsecureSkipVerify: false,
+	//	RootCAs:            certificates.CAs,
+	//}
+	//opts := []grpc.DialOption{grpc.WithTransportCredentials(credentials.NewTLS(configTLS)), grpc.WithKeepaliveParams(KACP),
+	//	grpc.WithDefaultCallOptions(grpc.UseCompressor("gzip")),
+	//	// https://chromium.googlesource.com/external/github.com/grpc/grpc-go/+/HEAD/Documentation/encoding.md
+	//}
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	conn, err := grpc.Dial(ip+config.Config.MDSPort, opts...)
 	if err != nil {
 		logger.FatalLogger.Fatalln("Failed to start gRPC connection:", err)
