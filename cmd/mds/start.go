@@ -8,7 +8,7 @@ import (
 	"github.com/IBM/gedsmds/protos/protos"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	_ "google.golang.org/grpc/encoding/gzip"
+	//_ "google.golang.org/grpc/encoding/gzip"
 	"net"
 	"path/filepath"
 )
