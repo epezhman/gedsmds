@@ -22,7 +22,7 @@ func (t *Service) GetConnectionInformation(_ context.Context, _ *protos.EmptyPar
 	currentIP := connpool.GetOutboundIP()
 	logger.InfoLogger.Println("Found my IP:", currentIP)
 	return &protos.ConnectionInformation{
-		RemoteAddress: "127.0.0.1",
+		RemoteAddress: currentIP,
 	}, nil
 }
 
