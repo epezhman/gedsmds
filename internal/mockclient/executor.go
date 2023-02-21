@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/IBM/gedsmds/internal/connection/connpool"
 	"github.com/IBM/gedsmds/internal/logger"
-	protos "github.com/IBM/gedsmds/protos/goprotos"
+	"github.com/IBM/gedsmds/protos/goprotos"
 )
 
 type Executor struct {

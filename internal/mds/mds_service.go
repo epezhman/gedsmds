@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/IBM/gedsmds/internal/logger"
 	"github.com/IBM/gedsmds/internal/mdsprocessor"
-	protos "github.com/IBM/gedsmds/protos/goprotos"
+	"github.com/IBM/gedsmds/protos/goprotos"
 )
 
 type Service struct {
