@@ -5,7 +5,7 @@ import (
 	"github.com/IBM/gedsmds/internal/connection/serverconfig"
 	"github.com/IBM/gedsmds/internal/logger"
 	"github.com/IBM/gedsmds/internal/mds"
-	"github.com/IBM/gedsmds/protos/goprotos"
+	"github.com/IBM/gedsmds/protos/protos"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	_ "google.golang.org/grpc/encoding/gzip"
