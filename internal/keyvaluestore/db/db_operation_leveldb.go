@@ -2,6 +2,8 @@ package db
 
 import (
 	"github.com/IBM/gedsmds/internal/logger"
+	"github.com/IBM/gedsmds/protos/protos"
+	"github.com/golang/protobuf/proto"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
@@ -27,5 +29,12 @@ func NewOperations() *Operations {
 	}
 	return &Operations{
 		db: tempDB,
+	}
+}
+
+func (o *Operations) PutObject(object *protos.Object) {
+	dbValue, _ := proto.Marshal(object)
+	if err := o.db.Put([]byte(object.Id.Bucket+object.Id.Key), dbValue, nil); err != nil {
+		logger.ErrorLogger.Println(err)
 	}
 }

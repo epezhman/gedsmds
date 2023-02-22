@@ -98,6 +98,7 @@ func (kv *KeyValueStore) CreateObject(object *protos.Object) error {
 		logger.InfoLogger.Println("object already exists")
 	}
 	kv.kvObjectsMap[object.Id.Key] = object
+	go kv.dbConnection.PutObject(object)
 	return nil
 }
 
