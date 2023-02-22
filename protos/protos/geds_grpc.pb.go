@@ -32,6 +32,7 @@ type MetadataServiceClient interface {
 	Lookup(ctx context.Context, in *ObjectID, opts ...grpc.CallOption) (*ObjectResponse, error)
 	List(ctx context.Context, in *ObjectListRequest, opts ...grpc.CallOption) (*ObjectListResponse, error)
 	TestRPC(ctx context.Context, in *ConnectionInformation, opts ...grpc.CallOption) (*ConnectionInformation, error)
+	SubscribeObjects(ctx context.Context, in *ObjectEventSubscription, opts ...grpc.CallOption) (MetadataService_SubscribeObjectsClient, error)
 }
 
 type metadataServiceClient struct {
@@ -168,6 +169,38 @@ func (c *metadataServiceClient) TestRPC(ctx context.Context, in *ConnectionInfor
 	return out, nil
 }
 
+func (c *metadataServiceClient) SubscribeObjects(ctx context.Context, in *ObjectEventSubscription, opts ...grpc.CallOption) (MetadataService_SubscribeObjectsClient, error) {
+	stream, err := c.cc.NewStream(ctx, &MetadataService_ServiceDesc.Streams[0], "/geds.rpc.MetadataService/SubscribeObjects", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &metadataServiceSubscribeObjectsClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type MetadataService_SubscribeObjectsClient interface {
+	Recv() (*ObjectSubscription, error)
+	grpc.ClientStream
+}
+
+type metadataServiceSubscribeObjectsClient struct {
+	grpc.ClientStream
+}
+
+func (x *metadataServiceSubscribeObjectsClient) Recv() (*ObjectSubscription, error) {
+	m := new(ObjectSubscription)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // MetadataServiceServer is the server API for MetadataService service.
 // All implementations should embed UnimplementedMetadataServiceServer
 // for forward compatibility
@@ -186,6 +219,7 @@ type MetadataServiceServer interface {
 	Lookup(context.Context, *ObjectID) (*ObjectResponse, error)
 	List(context.Context, *ObjectListRequest) (*ObjectListResponse, error)
 	TestRPC(context.Context, *ConnectionInformation) (*ConnectionInformation, error)
+	SubscribeObjects(*ObjectEventSubscription, MetadataService_SubscribeObjectsServer) error
 }
 
 // UnimplementedMetadataServiceServer should be embedded to have forward compatible implementations.
@@ -233,6 +267,9 @@ func (UnimplementedMetadataServiceServer) List(context.Context, *ObjectListReque
 }
 func (UnimplementedMetadataServiceServer) TestRPC(context.Context, *ConnectionInformation) (*ConnectionInformation, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TestRPC not implemented")
+}
+func (UnimplementedMetadataServiceServer) SubscribeObjects(*ObjectEventSubscription, MetadataService_SubscribeObjectsServer) error {
+	return status.Errorf(codes.Unimplemented, "method SubscribeObjects not implemented")
 }
 
 // UnsafeMetadataServiceServer may be embedded to opt out of forward compatibility for this service.
@@ -498,6 +535,27 @@ func _MetadataService_TestRPC_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MetadataService_SubscribeObjects_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ObjectEventSubscription)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(MetadataServiceServer).SubscribeObjects(m, &metadataServiceSubscribeObjectsServer{stream})
+}
+
+type MetadataService_SubscribeObjectsServer interface {
+	Send(*ObjectSubscription) error
+	grpc.ServerStream
+}
+
+type metadataServiceSubscribeObjectsServer struct {
+	grpc.ServerStream
+}
+
+func (x *metadataServiceSubscribeObjectsServer) Send(m *ObjectSubscription) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 // MetadataService_ServiceDesc is the grpc.ServiceDesc for MetadataService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -562,7 +620,13 @@ var MetadataService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _MetadataService_TestRPC_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "SubscribeObjects",
+			Handler:       _MetadataService_SubscribeObjects_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "geds.proto",
 }
 

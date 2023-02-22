@@ -9,17 +9,6 @@ import (
 	"sync"
 )
 
-type KeyValueStore struct {
-	kvObjectStoreConfigLock  *sync.RWMutex
-	kvObjectStoreConfigMap   map[string]*protos.ObjectStoreConfig
-	kvObjectStoreConfigSlice []*protos.ObjectStoreConfig
-	dbConnection             *db.Operations
-	kvBucketLock             *sync.RWMutex
-	kvBucket                 map[string]*protos.Bucket
-	kvObjectsLock            *sync.RWMutex
-	kvObjectsMap             map[string]*protos.Object
-}
-
 func InitKeyValueStore() *KeyValueStore {
 	kvStore := &KeyValueStore{
 		kvObjectStoreConfigLock:  &sync.RWMutex{},

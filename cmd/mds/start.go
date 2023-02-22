@@ -4,7 +4,7 @@ import (
 	"github.com/IBM/gedsmds/internal/config"
 	"github.com/IBM/gedsmds/internal/connection/serverconfig"
 	"github.com/IBM/gedsmds/internal/logger"
-	"github.com/IBM/gedsmds/internal/mds"
+	"github.com/IBM/gedsmds/internal/mdsservice"
 	"github.com/IBM/gedsmds/protos/protos"
 	"google.golang.org/grpc"
 	//_ "google.golang.org/grpc/encoding/gzip"
@@ -28,7 +28,7 @@ func main() {
 	opts := []grpc.ServerOption{grpc.KeepaliveEnforcementPolicy(serverconfig.KAEP),
 		grpc.KeepaliveParams(serverconfig.KASP)}
 	grpcServer := grpc.NewServer(opts...)
-	serviceInstance := mds.NewService()
+	serviceInstance := mdsservice.NewService()
 	protos.RegisterMetadataServiceServer(grpcServer, serviceInstance)
 	logger.InfoLogger.Println("Metadata Server is listening on port", config.Config.MDSPort)
 	err = grpcServer.Serve(lis)

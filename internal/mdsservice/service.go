@@ -1,4 +1,4 @@
-package mds
+package mdsservice
 
 import (
 	"context"
@@ -9,32 +9,31 @@ import (
 	"github.com/IBM/gedsmds/protos/protos"
 )
 
-type Service struct {
-	mdsProcessor *mdsprocessor.Processor
-	kvStore      *keyvaluestore.KeyValueStore
-}
-
 func NewService() *Service {
+	kvStore := keyvaluestore.InitKeyValueStore()
 	return &Service{
-		mdsProcessor: mdsprocessor.InitProcessor(),
-		kvStore:      keyvaluestore.InitKeyValueStore(),
+		mdsProcessor: mdsprocessor.InitProcessor(kvStore),
+		kvStore:      kvStore,
 	}
 }
 
-func (s *Service) GetConnectionInformation(_ context.Context, _ *protos.EmptyParams) (*protos.ConnectionInformation, error) {
+func (s *Service) GetConnectionInformation(_ context.Context,
+	_ *protos.EmptyParams) (*protos.ConnectionInformation, error) {
 	currentIP := connpool.GetOutboundIP()
 	logger.InfoLogger.Println("Found my IP:", currentIP)
 	return &protos.ConnectionInformation{RemoteAddress: currentIP}, nil
 }
 
-func (s *Service) RegisterObjectStore(_ context.Context, objectStore *protos.ObjectStoreConfig) (*protos.StatusResponse, error) {
+func (s *Service) RegisterObjectStore(_ context.Context,
+	objectStore *protos.ObjectStoreConfig) (*protos.StatusResponse, error) {
 	if err := s.kvStore.RegisterObjectStore(objectStore); err != nil {
 		return &protos.StatusResponse{Code: protos.StatusCode_ALREADY_EXISTS}, err
 	}
 	return &protos.StatusResponse{Code: protos.StatusCode_OK}, nil
 }
 
-func (s *Service) ListObjectStores(_ context.Context, _ *protos.EmptyParams) (*protos.AvailableObjectStoreConfigs, error) {
+func (s *Service) ListObjectStores(_ context.Context,
+	_ *protos.EmptyParams) (*protos.AvailableObjectStoreConfigs, error) {
 	return s.kvStore.ListObjectStores()
 }
 
@@ -108,4 +107,9 @@ func (s *Service) List(_ context.Context, _ *protos.ObjectListRequest) (*protos.
 func (s *Service) TestRPC(_ context.Context, conn *protos.ConnectionInformation) (*protos.ConnectionInformation, error) {
 	logger.InfoLogger.Println("Got this:", conn.RemoteAddress)
 	return &protos.ConnectionInformation{RemoteAddress: conn.RemoteAddress}, nil
+}
+
+func (s *Service) SubscribeObjects(subscription *protos.ObjectEventSubscription,
+	stream protos.MetadataService_SubscribeObjectsServer) error {
+	return s.mdsProcessor.ObjectEventSubscription(subscription, stream)
 }
