@@ -27,6 +27,15 @@ func (p *Processor) ObjectEventSubscription(subscription *protos.ObjectEventSubs
 	}
 	p.objectSubscribersLock.Unlock()
 	cntx := stream.Context()
+
+	go func(sub *protos.ObjectEventSubscription) {
+		for i := 0; i < 10; i++ {
+			p.sendObjectPublication(sub.SubscriberID, &protos.ObjectEventSubscription{
+				ObjectID: sub.SubscriberID,
+			})
+		}
+	}(subscription)
+
 	for {
 		select {
 		case <-finished:
