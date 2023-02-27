@@ -6,7 +6,7 @@ import (
 	"sync"
 )
 
-type KeyValueStore struct {
+type KeyValueStoreService struct {
 	kvObjectStoreConfigLock  *sync.RWMutex
 	kvObjectStoreConfigMap   map[string]*protos.ObjectStoreConfig
 	kvObjectStoreConfigSlice []*protos.ObjectStoreConfig
@@ -15,4 +15,6 @@ type KeyValueStore struct {
 	kvBucket                 map[string]*protos.Bucket
 	kvObjectsLock            *sync.RWMutex
 	kvObjectsMap             map[string]*protos.Object
+	UpdatedBucket            chan *protos.Bucket
+	UpdatedObject            chan *protos.Object
 }

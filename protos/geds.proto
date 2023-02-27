@@ -67,13 +67,25 @@ message ObjectResponse {
   optional StatusResponse error = 2;
 }
 
-message ObjectEventSubscription {
-  string SubscriberID = 1;
-  string ObjectID = 2;
+enum SubscriptionType {
+  NOTYPE = 0;
+  BUCKET = 1;
+  OBJECT = 2;
+  PREFIX = 3;
 }
 
-message ObjectSubscription {
-  string ObjectID = 1;
+message SubscriptionEvent {
+  SubscriptionType subscriptionType = 1;
+  string subscriberID = 2;
+  string bucketID = 3;
+  string key = 4;
+  string prefix = 5;
+}
+
+message SubscriptionResponse {
+  SubscriptionType subscriptionType = 1;
+  Object object = 2;
+  Bucket bucket = 3;
 }
 
 service MetadataService {
@@ -90,8 +102,9 @@ service MetadataService {
   rpc DeletePrefix(ObjectID) returns (StatusResponse);
   rpc Lookup(ObjectID) returns (ObjectResponse);
   rpc List(ObjectListRequest) returns (ObjectListResponse);
-  rpc TestRPC(ConnectionInformation) returns (ConnectionInformation);
-  rpc SubscribeObjects (ObjectEventSubscription) returns (stream ObjectSubscription);
+
+  rpc Subscribe(SubscriptionEvent) returns (stream SubscriptionResponse);
+  rpc Unsubscribe(SubscriptionEvent) returns (StatusResponse);
 }
 
 enum FileTransferProtocol {

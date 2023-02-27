@@ -31,8 +31,8 @@ type MetadataServiceClient interface {
 	DeletePrefix(ctx context.Context, in *ObjectID, opts ...grpc.CallOption) (*StatusResponse, error)
 	Lookup(ctx context.Context, in *ObjectID, opts ...grpc.CallOption) (*ObjectResponse, error)
 	List(ctx context.Context, in *ObjectListRequest, opts ...grpc.CallOption) (*ObjectListResponse, error)
-	TestRPC(ctx context.Context, in *ConnectionInformation, opts ...grpc.CallOption) (*ConnectionInformation, error)
-	SubscribeObjects(ctx context.Context, in *ObjectEventSubscription, opts ...grpc.CallOption) (MetadataService_SubscribeObjectsClient, error)
+	Subscribe(ctx context.Context, in *SubscriptionEvent, opts ...grpc.CallOption) (MetadataService_SubscribeClient, error)
+	Unsubscribe(ctx context.Context, in *SubscriptionEvent, opts ...grpc.CallOption) (*StatusResponse, error)
 }
 
 type metadataServiceClient struct {
@@ -160,21 +160,12 @@ func (c *metadataServiceClient) List(ctx context.Context, in *ObjectListRequest,
 	return out, nil
 }
 
-func (c *metadataServiceClient) TestRPC(ctx context.Context, in *ConnectionInformation, opts ...grpc.CallOption) (*ConnectionInformation, error) {
-	out := new(ConnectionInformation)
-	err := c.cc.Invoke(ctx, "/geds.rpc.MetadataService/TestRPC", in, out, opts...)
+func (c *metadataServiceClient) Subscribe(ctx context.Context, in *SubscriptionEvent, opts ...grpc.CallOption) (MetadataService_SubscribeClient, error) {
+	stream, err := c.cc.NewStream(ctx, &MetadataService_ServiceDesc.Streams[0], "/geds.rpc.MetadataService/Subscribe", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
-}
-
-func (c *metadataServiceClient) SubscribeObjects(ctx context.Context, in *ObjectEventSubscription, opts ...grpc.CallOption) (MetadataService_SubscribeObjectsClient, error) {
-	stream, err := c.cc.NewStream(ctx, &MetadataService_ServiceDesc.Streams[0], "/geds.rpc.MetadataService/SubscribeObjects", opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &metadataServiceSubscribeObjectsClient{stream}
+	x := &metadataServiceSubscribeClient{stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -184,21 +175,30 @@ func (c *metadataServiceClient) SubscribeObjects(ctx context.Context, in *Object
 	return x, nil
 }
 
-type MetadataService_SubscribeObjectsClient interface {
-	Recv() (*ObjectSubscription, error)
+type MetadataService_SubscribeClient interface {
+	Recv() (*SubscriptionResponse, error)
 	grpc.ClientStream
 }
 
-type metadataServiceSubscribeObjectsClient struct {
+type metadataServiceSubscribeClient struct {
 	grpc.ClientStream
 }
 
-func (x *metadataServiceSubscribeObjectsClient) Recv() (*ObjectSubscription, error) {
-	m := new(ObjectSubscription)
+func (x *metadataServiceSubscribeClient) Recv() (*SubscriptionResponse, error) {
+	m := new(SubscriptionResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
+}
+
+func (c *metadataServiceClient) Unsubscribe(ctx context.Context, in *SubscriptionEvent, opts ...grpc.CallOption) (*StatusResponse, error) {
+	out := new(StatusResponse)
+	err := c.cc.Invoke(ctx, "/geds.rpc.MetadataService/Unsubscribe", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 // MetadataServiceServer is the server API for MetadataService service.
@@ -218,8 +218,8 @@ type MetadataServiceServer interface {
 	DeletePrefix(context.Context, *ObjectID) (*StatusResponse, error)
 	Lookup(context.Context, *ObjectID) (*ObjectResponse, error)
 	List(context.Context, *ObjectListRequest) (*ObjectListResponse, error)
-	TestRPC(context.Context, *ConnectionInformation) (*ConnectionInformation, error)
-	SubscribeObjects(*ObjectEventSubscription, MetadataService_SubscribeObjectsServer) error
+	Subscribe(*SubscriptionEvent, MetadataService_SubscribeServer) error
+	Unsubscribe(context.Context, *SubscriptionEvent) (*StatusResponse, error)
 }
 
 // UnimplementedMetadataServiceServer should be embedded to have forward compatible implementations.
@@ -265,11 +265,11 @@ func (UnimplementedMetadataServiceServer) Lookup(context.Context, *ObjectID) (*O
 func (UnimplementedMetadataServiceServer) List(context.Context, *ObjectListRequest) (*ObjectListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
-func (UnimplementedMetadataServiceServer) TestRPC(context.Context, *ConnectionInformation) (*ConnectionInformation, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method TestRPC not implemented")
+func (UnimplementedMetadataServiceServer) Subscribe(*SubscriptionEvent, MetadataService_SubscribeServer) error {
+	return status.Errorf(codes.Unimplemented, "method Subscribe not implemented")
 }
-func (UnimplementedMetadataServiceServer) SubscribeObjects(*ObjectEventSubscription, MetadataService_SubscribeObjectsServer) error {
-	return status.Errorf(codes.Unimplemented, "method SubscribeObjects not implemented")
+func (UnimplementedMetadataServiceServer) Unsubscribe(context.Context, *SubscriptionEvent) (*StatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Unsubscribe not implemented")
 }
 
 // UnsafeMetadataServiceServer may be embedded to opt out of forward compatibility for this service.
@@ -517,43 +517,43 @@ func _MetadataService_List_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
-func _MetadataService_TestRPC_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ConnectionInformation)
+func _MetadataService_Subscribe_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(SubscriptionEvent)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(MetadataServiceServer).Subscribe(m, &metadataServiceSubscribeServer{stream})
+}
+
+type MetadataService_SubscribeServer interface {
+	Send(*SubscriptionResponse) error
+	grpc.ServerStream
+}
+
+type metadataServiceSubscribeServer struct {
+	grpc.ServerStream
+}
+
+func (x *metadataServiceSubscribeServer) Send(m *SubscriptionResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func _MetadataService_Unsubscribe_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SubscriptionEvent)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MetadataServiceServer).TestRPC(ctx, in)
+		return srv.(MetadataServiceServer).Unsubscribe(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/geds.rpc.MetadataService/TestRPC",
+		FullMethod: "/geds.rpc.MetadataService/Unsubscribe",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MetadataServiceServer).TestRPC(ctx, req.(*ConnectionInformation))
+		return srv.(MetadataServiceServer).Unsubscribe(ctx, req.(*SubscriptionEvent))
 	}
 	return interceptor(ctx, in, info, handler)
-}
-
-func _MetadataService_SubscribeObjects_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(ObjectEventSubscription)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(MetadataServiceServer).SubscribeObjects(m, &metadataServiceSubscribeObjectsServer{stream})
-}
-
-type MetadataService_SubscribeObjectsServer interface {
-	Send(*ObjectSubscription) error
-	grpc.ServerStream
-}
-
-type metadataServiceSubscribeObjectsServer struct {
-	grpc.ServerStream
-}
-
-func (x *metadataServiceSubscribeObjectsServer) Send(m *ObjectSubscription) error {
-	return x.ServerStream.SendMsg(m)
 }
 
 // MetadataService_ServiceDesc is the grpc.ServiceDesc for MetadataService service.
@@ -616,14 +616,14 @@ var MetadataService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _MetadataService_List_Handler,
 		},
 		{
-			MethodName: "TestRPC",
-			Handler:    _MetadataService_TestRPC_Handler,
+			MethodName: "Unsubscribe",
+			Handler:    _MetadataService_Unsubscribe_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "SubscribeObjects",
-			Handler:       _MetadataService_SubscribeObjects_Handler,
+			StreamName:    "Subscribe",
+			Handler:       _MetadataService_Subscribe_Handler,
 			ServerStreams: true,
 		},
 	},

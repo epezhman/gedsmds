@@ -9,8 +9,9 @@ import (
 var Config *Configuration
 
 type Configuration struct {
-	UUID    string `mapstructure:"UUID"`
-	MDSPort string `mapstructure:"METADATASERVER_PORT"`
+	UUID          string `mapstructure:"UUID"`
+	MDSPort       string `mapstructure:"METADATASERVER_PORT"`
+	PubSubEnabled bool   `mapstructure:"PUBSUB_ENABLED"`
 }
 
 func init() {

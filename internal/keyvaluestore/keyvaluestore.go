@@ -9,8 +9,8 @@ import (
 	"sync"
 )
 
-func InitKeyValueStore() *KeyValueStore {
-	kvStore := &KeyValueStore{
+func InitKeyValueStoreService() *KeyValueStoreService {
+	kvStore := &KeyValueStoreService{
 		kvObjectStoreConfigLock:  &sync.RWMutex{},
 		kvObjectStoreConfigMap:   map[string]*protos.ObjectStoreConfig{},
 		kvObjectStoreConfigSlice: []*protos.ObjectStoreConfig{},
@@ -23,7 +23,7 @@ func InitKeyValueStore() *KeyValueStore {
 	return kvStore
 }
 
-func (kv *KeyValueStore) RegisterObjectStore(objectStore *protos.ObjectStoreConfig) error {
+func (kv *KeyValueStoreService) RegisterObjectStore(objectStore *protos.ObjectStoreConfig) error {
 	kv.kvObjectStoreConfigLock.Lock()
 	defer kv.kvObjectStoreConfigLock.Unlock()
 	if _, ok := kv.kvObjectStoreConfigMap[objectStore.Bucket]; ok {
@@ -34,7 +34,7 @@ func (kv *KeyValueStore) RegisterObjectStore(objectStore *protos.ObjectStoreConf
 	return nil
 }
 
-func (kv *KeyValueStore) ListObjectStores() (*protos.AvailableObjectStoreConfigs, error) {
+func (kv *KeyValueStoreService) ListObjectStores() (*protos.AvailableObjectStoreConfigs, error) {
 	kv.kvObjectStoreConfigLock.RLock()
 	defer kv.kvObjectStoreConfigLock.RUnlock()
 	mappings := &protos.AvailableObjectStoreConfigs{Mappings: []*protos.ObjectStoreConfig{}}
@@ -42,7 +42,7 @@ func (kv *KeyValueStore) ListObjectStores() (*protos.AvailableObjectStoreConfigs
 	return mappings, nil
 }
 
-func (kv *KeyValueStore) CreateBucket(bucket *protos.Bucket) error {
+func (kv *KeyValueStoreService) CreateBucket(bucket *protos.Bucket) error {
 	kv.kvBucketLock.Lock()
 	defer kv.kvBucketLock.Unlock()
 	if _, ok := kv.kvBucket[bucket.Bucket]; ok {
@@ -52,7 +52,7 @@ func (kv *KeyValueStore) CreateBucket(bucket *protos.Bucket) error {
 	return nil
 }
 
-func (kv *KeyValueStore) DeleteBucket(bucket *protos.Bucket) error {
+func (kv *KeyValueStoreService) DeleteBucket(bucket *protos.Bucket) error {
 	kv.kvBucketLock.Lock()
 	defer kv.kvBucketLock.Unlock()
 	if _, ok := kv.kvBucket[bucket.Bucket]; !ok {
@@ -62,7 +62,7 @@ func (kv *KeyValueStore) DeleteBucket(bucket *protos.Bucket) error {
 	return nil
 }
 
-func (kv *KeyValueStore) ListBuckets() (*protos.BucketListResponse, error) {
+func (kv *KeyValueStoreService) ListBuckets() (*protos.BucketListResponse, error) {
 	kv.kvBucketLock.RLock()
 	defer kv.kvBucketLock.RUnlock()
 	buckets := &protos.BucketListResponse{Results: []string{}}
@@ -70,7 +70,7 @@ func (kv *KeyValueStore) ListBuckets() (*protos.BucketListResponse, error) {
 	return buckets, nil
 }
 
-func (kv *KeyValueStore) LookupBucket(bucket *protos.Bucket) error {
+func (kv *KeyValueStoreService) LookupBucket(bucket *protos.Bucket) error {
 	kv.kvBucketLock.RLock()
 	defer kv.kvBucketLock.RUnlock()
 	if _, ok := kv.kvBucket[bucket.Bucket]; !ok {
@@ -79,7 +79,7 @@ func (kv *KeyValueStore) LookupBucket(bucket *protos.Bucket) error {
 	return nil
 }
 
-func (kv *KeyValueStore) LookupBucketByName(bucketName string) error {
+func (kv *KeyValueStoreService) LookupBucketByName(bucketName string) error {
 	kv.kvBucketLock.RLock()
 	defer kv.kvBucketLock.RUnlock()
 	if _, ok := kv.kvBucket[bucketName]; !ok {
@@ -88,7 +88,7 @@ func (kv *KeyValueStore) LookupBucketByName(bucketName string) error {
 	return nil
 }
 
-func (kv *KeyValueStore) CreateObject(object *protos.Object) error {
+func (kv *KeyValueStoreService) CreateObject(object *protos.Object) error {
 	if err := kv.LookupBucketByName(object.Id.Bucket); err != nil {
 		return err
 	}
@@ -98,21 +98,19 @@ func (kv *KeyValueStore) CreateObject(object *protos.Object) error {
 		logger.InfoLogger.Println("object already exists")
 	}
 	kv.kvObjectsMap[object.Id.Key] = object
+	// TODO: Have to be optimized
 	go kv.dbConnection.PutObject(object)
 	return nil
 }
 
-func (kv *KeyValueStore) UpdateObject(object *protos.Object) error {
+func (kv *KeyValueStoreService) UpdateObject(object *protos.Object) error {
 	kv.kvObjectsLock.Lock()
 	defer kv.kvObjectsLock.Unlock()
-	if _, ok := kv.kvObjectsMap[object.Id.Key]; ok {
-		logger.InfoLogger.Println("object already exists")
-	}
 	kv.kvObjectsMap[object.Id.Key] = object
 	return nil
 }
 
-func (kv *KeyValueStore) DeleteObject(objectID *protos.ObjectID) error {
+func (kv *KeyValueStoreService) DeleteObject(objectID *protos.ObjectID) error {
 	kv.kvObjectsLock.Lock()
 	defer kv.kvObjectsLock.Unlock()
 	if _, ok := kv.kvObjectsMap[objectID.Key]; !ok {
@@ -122,11 +120,11 @@ func (kv *KeyValueStore) DeleteObject(objectID *protos.ObjectID) error {
 	return nil
 }
 
-func (kv *KeyValueStore) DeleteObjectPrefix(_ *protos.ObjectID) error {
+func (kv *KeyValueStoreService) DeleteObjectPrefix(_ *protos.ObjectID) error {
 	return nil
 }
 
-func (kv *KeyValueStore) LookupObject(objectID *protos.ObjectID) (*protos.ObjectResponse, error) {
+func (kv *KeyValueStoreService) LookupObject(objectID *protos.ObjectID) (*protos.ObjectResponse, error) {
 	kv.kvObjectsLock.RLock()
 	defer kv.kvObjectsLock.RUnlock()
 	if _, ok := kv.kvObjectsMap[objectID.Key]; !ok {
@@ -137,6 +135,6 @@ func (kv *KeyValueStore) LookupObject(objectID *protos.ObjectID) (*protos.Object
 	}, nil
 }
 
-func (kv *KeyValueStore) ListObjects() error {
+func (kv *KeyValueStoreService) ListObjects() error {
 	return nil
 }
