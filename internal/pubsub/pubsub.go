@@ -24,7 +24,7 @@ func InitService(kvStore *keyvaluestore.KeyValueStoreService) *Service {
 		prefixSubscriberStreams: map[string]*SubscriberStream{},
 		prefixSubscribers:       map[string][]string{},
 	}
-	service.runPubSubEventListeners()
+	go service.runPubSubEventListeners()
 	return service
 }
 
