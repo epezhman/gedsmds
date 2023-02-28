@@ -56,7 +56,7 @@ func (s *Service) runPubSubEventListeners() {
 
 func (s *Service) Subscribe(subscription *protos.SubscriptionEvent,
 	stream protos.MetadataService_SubscribeServer) error {
-	logger.InfoLogger.Println("got subscription subscriberID - type", subscription.SubscriberID, subscription.SubscriptionType)
+	logger.InfoLogger.Println("got subscription %+v ", subscription)
 	var subscriberID string
 	var err error
 	if subscriberID, err = s.createSubscriptionKey(subscription); err != nil {
