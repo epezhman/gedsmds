@@ -24,7 +24,7 @@ func InitService(kvStore *keyvaluestore.Service) *Service {
 		prefixSubscriberStreams: map[string]*SubscriberStream{},
 		prefixSubscribers:       map[string][]string{},
 
-		UpdatedBucket: make(chan *protos.Bucket, channelBufferSize),
+		//UpdatedBucket: make(chan *protos.Bucket, channelBufferSize),
 		UpdatedObject: make(chan *protos.Object, channelBufferSize),
 	}
 	go service.runPubSubEventListeners()
@@ -34,16 +34,21 @@ func InitService(kvStore *keyvaluestore.Service) *Service {
 func (s *Service) runPubSubEventListeners() {
 	for {
 		select {
-		case bucket := <-s.UpdatedBucket:
-			go s.matchSubscriptions(&protos.SubscriptionEvent{
-				SubscriptionType: protos.SubscriptionType_BUCKET,
-				BucketID:         bucket.Bucket,
-			}, nil, bucket)
+		//case bucket := <-s.UpdatedBucket:
+		//	go s.matchSubscriptions(&protos.SubscriptionEvent{
+		//		SubscriptionType: protos.SubscriptionType_BUCKET,
+		//		BucketID:         bucket.Bucket,
+		//	}, nil, bucket)
 		case object := <-s.UpdatedObject:
 			go s.matchSubscriptions(&protos.SubscriptionEvent{
 				SubscriptionType: protos.SubscriptionType_OBJECT,
 				Key:              object.Id.Key,
 			}, object, nil)
+			bucket := &protos.Bucket{Bucket: object.Id.Bucket}
+			go s.matchSubscriptions(&protos.SubscriptionEvent{
+				SubscriptionType: protos.SubscriptionType_BUCKET,
+				BucketID:         bucket.Bucket,
+			}, nil, bucket)
 		}
 	}
 }

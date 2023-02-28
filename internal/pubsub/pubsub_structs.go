@@ -6,7 +6,7 @@ import (
 	"sync"
 )
 
-const channelBufferSize = 10
+const channelBufferSize = 200
 
 type SubscriberStream struct {
 	stream   protos.MetadataService_SubscribeServer
@@ -28,6 +28,6 @@ type Service struct {
 	prefixSubscriberStreams map[string]*SubscriberStream
 	prefixSubscribers       map[string][]string
 
-	UpdatedBucket chan *protos.Bucket
+	//UpdatedBucket chan *protos.Bucket
 	UpdatedObject chan *protos.Object
 }
