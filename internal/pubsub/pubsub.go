@@ -59,9 +59,10 @@ func (s *Service) Subscribe(subscription *protos.SubscriptionEvent,
 	logger.InfoLogger.Println("got subscription %+v ", subscription)
 	var subscriberID string
 	var err error
-	if subscriberID, err = s.createSubscriptionKey(subscription); err != nil {
-		return err
-	}
+	subscriberID = subscription.SubscriberID
+	//if subscriberID, err = s.createSubscriptionKey(subscription); err != nil {
+	//	return err
+	//}
 	finished := make(chan bool)
 	if subscription.SubscriptionType == protos.SubscriptionType_BUCKET {
 		s.bucketSubscribersLock.Lock()
@@ -219,10 +220,12 @@ func (s *Service) removeElementFromSlice(subscribers []string, subscriberID stri
 
 func (s *Service) Unsubscribe(unsubscribe *protos.SubscriptionEvent) error {
 	var subscriberID string
-	var err error
-	if subscriberID, err = s.createSubscriptionKey(unsubscribe); err != nil {
-		return err
-	}
+	//var err error
+	//if subscriberID, err = s.createSubscriptionKey(unsubscribe); err != nil {
+	//	return err
+	//}
+	subscriberID = unsubscribe.SubscriberID
+
 	var streamer *SubscriberStream
 	var ok bool
 	if unsubscribe.SubscriptionType == protos.SubscriptionType_BUCKET {
