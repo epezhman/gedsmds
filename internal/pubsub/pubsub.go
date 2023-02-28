@@ -134,6 +134,7 @@ func (s *Service) matchSubscriptions(subscription *protos.SubscriptionEvent,
 	if !ok {
 		return
 	}
+	logger.InfoLogger.Println("matching subscribers: ", subscribers)
 	for _, subscriberID := range subscribers {
 		s.sendSubscriptions(subscription, subscriberID, object, bucket)
 	}
