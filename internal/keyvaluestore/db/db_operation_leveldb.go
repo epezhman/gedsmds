@@ -145,7 +145,6 @@ func (o *Operations) GetAllBuckets() (
 }
 
 func (o *Operations) PutObject(object *protos.Object) {
-	logger.InfoLogger.Println("saving data")
 	dbValue, _ := proto.Marshal(object)
 	if err := o.dbObject.Put([]byte(o.createObjectKey(object)), dbValue, nil); err != nil {
 		logger.ErrorLogger.Println(err)
