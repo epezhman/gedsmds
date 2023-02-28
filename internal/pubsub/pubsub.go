@@ -79,6 +79,7 @@ func (s *Service) Subscribe(subscription *protos.SubscriptionEvent,
 			stream:   stream,
 			finished: finished,
 		}
+		logger.InfoLogger.Println(s.objectSubscribers)
 		s.objectSubscribersLock.Unlock()
 	} else if subscription.SubscriptionType == protos.SubscriptionType_PREFIX {
 		s.prefixSubscribersLock.Lock()
@@ -121,6 +122,7 @@ func (s *Service) matchSubscriptions(subscription *protos.SubscriptionEvent,
 	} else if subscription.SubscriptionType == protos.SubscriptionType_OBJECT {
 		s.objectSubscribersLock.RLock()
 		objectId := s.createObjectKey(subscription)
+		logger.InfoLogger.Println(s.objectSubscribers)
 		if currentSubscribers, ok = s.objectSubscribers[objectId]; ok {
 			subscribers = append(subscribers, currentSubscribers...)
 		}
