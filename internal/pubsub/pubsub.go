@@ -8,7 +8,7 @@ import (
 	"sync"
 )
 
-func InitService(kvStore *keyvaluestore.KeyValueStoreService) *Service {
+func InitService(kvStore *keyvaluestore.Service) *Service {
 	service := &Service{
 		kvStore: kvStore,
 
@@ -23,6 +23,9 @@ func InitService(kvStore *keyvaluestore.KeyValueStoreService) *Service {
 		prefixSubscribersLock:   &sync.RWMutex{},
 		prefixSubscriberStreams: map[string]*SubscriberStream{},
 		prefixSubscribers:       map[string][]string{},
+
+		UpdatedBucket: make(chan *protos.Bucket, channelBufferSize),
+		UpdatedObject: make(chan *protos.Object, channelBufferSize),
 	}
 	go service.runPubSubEventListeners()
 	return service
@@ -31,14 +34,14 @@ func InitService(kvStore *keyvaluestore.KeyValueStoreService) *Service {
 func (s *Service) runPubSubEventListeners() {
 	for {
 		select {
-		case bucket := <-s.kvStore.UpdatedBucket:
+		case bucket := <-s.UpdatedBucket:
 			go s.matchSubscriptions(&protos.SubscriptionEvent{
 				SubscriptionType: protos.SubscriptionType_BUCKET,
 				BucketID:         bucket.Bucket,
 			}, nil, bucket)
-		case object := <-s.kvStore.UpdatedObject:
+		case object := <-s.UpdatedObject:
 			go s.matchSubscriptions(&protos.SubscriptionEvent{
-				SubscriptionType: protos.SubscriptionType_BUCKET,
+				SubscriptionType: protos.SubscriptionType_OBJECT,
 				Key:              object.Id.Key,
 			}, object, nil)
 		}
@@ -64,7 +67,8 @@ func (s *Service) Subscribe(subscription *protos.SubscriptionEvent,
 		s.bucketSubscribersLock.Unlock()
 	} else if subscription.SubscriptionType == protos.SubscriptionType_OBJECT {
 		s.objectSubscribersLock.Lock()
-		s.objectSubscribers[subscription.Key] = append(s.objectSubscribers[subscription.Key], subscriberID)
+		objectId := s.createObjectKey(subscription)
+		s.objectSubscribers[objectId] = append(s.objectSubscribers[objectId], subscriberID)
 		s.objectSubscriberStreams[subscriberID] = &SubscriberStream{
 			stream:   stream,
 			finished: finished,
@@ -72,8 +76,8 @@ func (s *Service) Subscribe(subscription *protos.SubscriptionEvent,
 		s.objectSubscribersLock.Unlock()
 	} else if subscription.SubscriptionType == protos.SubscriptionType_PREFIX {
 		s.prefixSubscribersLock.Lock()
-		s.prefixSubscribers[subscription.Key+subscription.Prefix] = append(s.prefixSubscribers[subscription.Key+
-			subscription.Prefix], subscriberID)
+		objectId := s.createObjectKey(subscription)
+		s.prefixSubscribers[objectId] = append(s.prefixSubscribers[objectId], subscriberID)
 		s.prefixSubscriberStreams[subscriberID] = &SubscriberStream{
 			stream:   stream,
 			finished: finished,
@@ -95,21 +99,6 @@ func (s *Service) Subscribe(subscription *protos.SubscriptionEvent,
 	}
 }
 
-func (s *Service) createSubscriptionKey(subscription *protos.SubscriptionEvent) (string, error) {
-	var subscriptionID string
-	if subscription.SubscriptionType == protos.SubscriptionType_BUCKET {
-		subscriptionID = subscription.BucketID + "-" + subscription.SubscriberID
-	} else if subscription.SubscriptionType == protos.SubscriptionType_OBJECT {
-		subscriptionID = subscription.BucketID + "-" + subscription.Key + "-" + subscription.SubscriberID
-	} else if subscription.SubscriptionType == protos.SubscriptionType_PREFIX {
-		subscriptionID = subscription.BucketID + "-" + subscription.Key +
-			"-" + subscription.Prefix + "-" + subscription.SubscriberID
-	} else {
-		return subscriptionID, errors.New("subscription type not found")
-	}
-	return subscriptionID, nil
-}
-
 func (s *Service) matchSubscriptions(subscription *protos.SubscriptionEvent,
 	object *protos.Object, bucket *protos.Bucket) {
 	var subscribers []string
@@ -123,13 +112,15 @@ func (s *Service) matchSubscriptions(subscription *protos.SubscriptionEvent,
 		s.bucketSubscribersLock.RUnlock()
 	} else if subscription.SubscriptionType == protos.SubscriptionType_OBJECT {
 		s.objectSubscribersLock.RLock()
-		if currentSubscribers, ok = s.objectSubscribers[subscription.Key]; ok {
+		objectId := s.createObjectKey(subscription)
+		if currentSubscribers, ok = s.objectSubscribers[objectId]; ok {
 			subscribers = append(subscribers, currentSubscribers...)
 		}
 		s.objectSubscribersLock.RUnlock()
 	} else if subscription.SubscriptionType == protos.SubscriptionType_PREFIX {
 		s.prefixSubscribersLock.RLock()
-		if currentSubscribers, ok = s.prefixSubscribers[subscription.Key+subscription.Prefix]; ok {
+		objectId := s.createObjectKey(subscription)
+		if currentSubscribers, ok = s.prefixSubscribers[objectId]; ok {
 			subscribers = append(subscribers, currentSubscribers...)
 		}
 		s.prefixSubscribersLock.RUnlock()
@@ -185,14 +176,16 @@ func (s *Service) removeSubscriber(streamer *SubscriberStream, subscription *pro
 	} else if subscription.SubscriptionType == protos.SubscriptionType_OBJECT {
 		s.objectSubscribersLock.Lock()
 		delete(s.objectSubscriberStreams, subscription.Key)
-		if currentSubscribers, ok := s.objectSubscribers[subscription.Key]; ok {
+		objectId := s.createObjectKey(subscription)
+		if currentSubscribers, ok := s.objectSubscribers[objectId]; ok {
 			s.removeElementFromSlice(currentSubscribers, subscriberID)
 		}
 		s.objectSubscribersLock.Unlock()
 	} else if subscription.SubscriptionType == protos.SubscriptionType_PREFIX {
 		s.prefixSubscribersLock.Lock()
+		objectId := s.createObjectKey(subscription)
 		delete(s.prefixSubscriberStreams, subscription.Key+subscription.Prefix)
-		if currentSubscribers, ok := s.prefixSubscribers[subscription.Key+subscription.Prefix]; ok {
+		if currentSubscribers, ok := s.prefixSubscribers[objectId]; ok {
 			s.removeElementFromSlice(currentSubscribers, subscriberID)
 		}
 		s.prefixSubscribersLock.Unlock()

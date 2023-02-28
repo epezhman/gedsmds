@@ -2,7 +2,6 @@ package mdsservice
 
 import (
 	"context"
-	"github.com/IBM/gedsmds/internal/logger"
 	"github.com/IBM/gedsmds/internal/mdsprocessor"
 	"github.com/IBM/gedsmds/protos/protos"
 )
@@ -15,9 +14,7 @@ func NewService() *Service {
 
 func (s *Service) GetConnectionInformation(_ context.Context,
 	_ *protos.EmptyParams) (*protos.ConnectionInformation, error) {
-	currentIP := s.processor.GetConnectionInformation()
-	logger.InfoLogger.Println("Found my IP:", currentIP)
-	return &protos.ConnectionInformation{RemoteAddress: currentIP}, nil
+	return &protos.ConnectionInformation{RemoteAddress: s.processor.GetConnectionInformation()}, nil
 }
 
 func (s *Service) RegisterObjectStore(_ context.Context,

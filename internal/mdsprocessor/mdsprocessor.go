@@ -64,7 +64,7 @@ func (s *Service) CreateObject(object *protos.Object) error {
 		return err
 	}
 	if config.Config.PubSubEnabled {
-		s.kvStore.UpdatedObject <- object
+		s.pubsub.UpdatedObject <- object
 	}
 	return nil
 }
@@ -74,7 +74,7 @@ func (s *Service) UpdateObject(object *protos.Object) error {
 		return err
 	}
 	if config.Config.PubSubEnabled {
-		s.kvStore.UpdatedObject <- object
+		s.pubsub.UpdatedObject <- object
 	}
 	return nil
 }
@@ -82,6 +82,11 @@ func (s *Service) UpdateObject(object *protos.Object) error {
 func (s *Service) DeleteObject(objectID *protos.ObjectID) error {
 	if err := s.kvStore.DeleteObject(objectID); err != nil {
 		return err
+	}
+	if config.Config.PubSubEnabled {
+		s.pubsub.UpdatedObject <- &protos.Object{
+			Id: objectID,
+		}
 	}
 	return nil
 }

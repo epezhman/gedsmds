@@ -7,5 +7,5 @@ import (
 
 type Service struct {
 	pubsub  *pubsub.Service
-	kvStore *keyvaluestore.KeyValueStoreService
+	kvStore *keyvaluestore.Service
 }
