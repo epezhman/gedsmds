@@ -40,6 +40,7 @@ func (s *Service) runPubSubEventListeners() {
 		//		BucketID:         bucket.Bucket,
 		//	}, nil, bucket)
 		case object := <-s.UpdatedObject:
+			logger.InfoLogger.Println("got object to the published")
 			go s.matchSubscriptions(&protos.SubscriptionEvent{
 				SubscriptionType: protos.SubscriptionType_OBJECT,
 				Key:              object.Id.Key,
