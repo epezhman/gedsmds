@@ -31,6 +31,7 @@ type MetadataServiceClient interface {
 	DeletePrefix(ctx context.Context, in *ObjectID, opts ...grpc.CallOption) (*StatusResponse, error)
 	Lookup(ctx context.Context, in *ObjectID, opts ...grpc.CallOption) (*ObjectResponse, error)
 	List(ctx context.Context, in *ObjectListRequest, opts ...grpc.CallOption) (*ObjectListResponse, error)
+	//rpc Publish(stream SubscriptionEvent) returns (EmptyParams);
 	Subscribe(ctx context.Context, in *SubscriptionEvent, opts ...grpc.CallOption) (MetadataService_SubscribeClient, error)
 	Unsubscribe(ctx context.Context, in *SubscriptionEvent, opts ...grpc.CallOption) (*StatusResponse, error)
 }
@@ -218,6 +219,7 @@ type MetadataServiceServer interface {
 	DeletePrefix(context.Context, *ObjectID) (*StatusResponse, error)
 	Lookup(context.Context, *ObjectID) (*ObjectResponse, error)
 	List(context.Context, *ObjectListRequest) (*ObjectListResponse, error)
+	//rpc Publish(stream SubscriptionEvent) returns (EmptyParams);
 	Subscribe(*SubscriptionEvent, MetadataService_SubscribeServer) error
 	Unsubscribe(context.Context, *SubscriptionEvent) (*StatusResponse, error)
 }

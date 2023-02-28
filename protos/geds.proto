@@ -103,6 +103,7 @@ service MetadataService {
   rpc Lookup(ObjectID) returns (ObjectResponse);
   rpc List(ObjectListRequest) returns (ObjectListResponse);
 
+  //rpc Publish(stream SubscriptionEvent) returns (EmptyParams);
   rpc Subscribe(SubscriptionEvent) returns (stream SubscriptionResponse);
   rpc Unsubscribe(SubscriptionEvent) returns (StatusResponse);
 }
