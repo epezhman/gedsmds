@@ -40,7 +40,6 @@ func (s *Service) runPubSubEventListeners() {
 		//		BucketID:         bucket.Bucket,
 		//	}, nil, bucket)
 		case object := <-s.UpdatedObject:
-			logger.InfoLogger.Println("got object to the published")
 			go s.matchSubscriptions(&protos.SubscriptionEvent{
 				SubscriptionType: protos.SubscriptionType_OBJECT,
 				Key:              object.Id.Key,
@@ -121,6 +120,7 @@ func (s *Service) matchSubscriptions(subscription *protos.SubscriptionEvent,
 	} else if subscription.SubscriptionType == protos.SubscriptionType_OBJECT {
 		s.objectSubscribersLock.RLock()
 		objectId := s.createObjectKey(subscription)
+		logger.InfoLogger.Println(objectId)
 		logger.InfoLogger.Println(s.objectSubscribers)
 		if currentSubscribers, ok = s.objectSubscribers[objectId]; ok {
 			subscribers = append(subscribers, currentSubscribers...)
