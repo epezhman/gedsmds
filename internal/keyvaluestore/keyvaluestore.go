@@ -169,7 +169,7 @@ func (kv *Service) CreateObject(object *protos.Object) error {
 	if config.Config.PersistentStorageEnabled {
 		kv.dbConnection.ObjectChan <- &db.OperationParams{
 			Object: object,
-			Type:   db.DELETE,
+			Type:   db.PUT,
 		}
 	}
 	return nil
@@ -182,7 +182,7 @@ func (kv *Service) UpdateObject(object *protos.Object) error {
 	if config.Config.PersistentStorageEnabled {
 		kv.dbConnection.ObjectChan <- &db.OperationParams{
 			Object: object,
-			Type:   db.DELETE,
+			Type:   db.PUT,
 		}
 	}
 	return nil
