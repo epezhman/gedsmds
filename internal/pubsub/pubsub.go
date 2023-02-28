@@ -24,7 +24,6 @@ func InitService(kvStore *keyvaluestore.Service) *Service {
 		prefixSubscriberStreams: map[string]*SubscriberStream{},
 		prefixSubscribers:       map[string][]string{},
 
-		//UpdatedBucket: make(chan *protos.Bucket, channelBufferSize),
 		UpdatedObject: make(chan *protos.Object, channelBufferSize),
 	}
 	go service.runPubSubEventListeners()
@@ -34,11 +33,6 @@ func InitService(kvStore *keyvaluestore.Service) *Service {
 func (s *Service) runPubSubEventListeners() {
 	for {
 		select {
-		//case bucket := <-s.UpdatedBucket:
-		//	go s.matchSubscriptions(&protos.SubscriptionEvent{
-		//		SubscriptionType: protos.SubscriptionType_BUCKET,
-		//		BucketID:         bucket.Bucket,
-		//	}, nil, bucket)
 		case object := <-s.UpdatedObject:
 			bucket := &protos.Bucket{Bucket: object.Id.Bucket}
 			go s.matchSubscriptions(&protos.SubscriptionEvent{
@@ -57,17 +51,12 @@ func (s *Service) runPubSubEventListeners() {
 func (s *Service) Subscribe(subscription *protos.SubscriptionEvent,
 	stream protos.MetadataService_SubscribeServer) error {
 	logger.InfoLogger.Println("got subscription %+v ", subscription)
-	var subscriberID string
 	var err error
-	subscriberID = subscription.SubscriberID
-	//if subscriberID, err = s.createSubscriptionKey(subscription); err != nil {
-	//	return err
-	//}
 	finished := make(chan bool)
 	if subscription.SubscriptionType == protos.SubscriptionType_BUCKET {
 		s.bucketSubscribersLock.Lock()
-		s.bucketSubscribers[subscription.BucketID] = append(s.bucketSubscribers[subscription.BucketID], subscriberID)
-		s.bucketSubscriberStreams[subscriberID] = &SubscriberStream{
+		s.bucketSubscribers[subscription.BucketID] = append(s.bucketSubscribers[subscription.BucketID], subscription.SubscriberID)
+		s.bucketSubscriberStreams[subscription.SubscriberID] = &SubscriberStream{
 			stream:   stream,
 			finished: finished,
 		}
@@ -75,8 +64,8 @@ func (s *Service) Subscribe(subscription *protos.SubscriptionEvent,
 	} else if subscription.SubscriptionType == protos.SubscriptionType_OBJECT {
 		s.objectSubscribersLock.Lock()
 		objectId := s.createObjectKey(subscription)
-		s.objectSubscribers[objectId] = append(s.objectSubscribers[objectId], subscriberID)
-		s.objectSubscriberStreams[subscriberID] = &SubscriberStream{
+		s.objectSubscribers[objectId] = append(s.objectSubscribers[objectId], subscription.SubscriberID)
+		s.objectSubscriberStreams[subscription.SubscriberID] = &SubscriberStream{
 			stream:   stream,
 			finished: finished,
 		}
@@ -85,8 +74,8 @@ func (s *Service) Subscribe(subscription *protos.SubscriptionEvent,
 	} else if subscription.SubscriptionType == protos.SubscriptionType_PREFIX {
 		s.prefixSubscribersLock.Lock()
 		objectId := s.createObjectKey(subscription)
-		s.prefixSubscribers[objectId] = append(s.prefixSubscribers[objectId], subscriberID)
-		s.prefixSubscriberStreams[subscriberID] = &SubscriberStream{
+		s.prefixSubscribers[objectId] = append(s.prefixSubscribers[objectId], subscription.SubscriberID)
+		s.prefixSubscriberStreams[subscription.SubscriberID] = &SubscriberStream{
 			stream:   stream,
 			finished: finished,
 		}
@@ -121,8 +110,6 @@ func (s *Service) matchSubscriptions(subscription *protos.SubscriptionEvent,
 	} else if subscription.SubscriptionType == protos.SubscriptionType_OBJECT {
 		s.objectSubscribersLock.RLock()
 		objectId := s.createObjectKey(subscription)
-		logger.InfoLogger.Println(objectId)
-		logger.InfoLogger.Println(s.objectSubscribers)
 		if currentSubscribers, ok = s.objectSubscribers[objectId]; ok {
 			subscribers = append(subscribers, currentSubscribers...)
 		}
@@ -217,32 +204,25 @@ func (s *Service) removeElementFromSlice(subscribers []string, subscriberID stri
 	subscribers = subscribers[:len(subscribers)-1]
 }
 
-func (s *Service) Unsubscribe(unsubscribe *protos.SubscriptionEvent) error {
-	var subscriberID string
-	//var err error
-	//if subscriberID, err = s.createSubscriptionKey(unsubscribe); err != nil {
-	//	return err
-	//}
-	subscriberID = unsubscribe.SubscriberID
-
+func (s *Service) Unsubscribe(unsubscription *protos.SubscriptionEvent) error {
 	var streamer *SubscriberStream
 	var ok bool
-	if unsubscribe.SubscriptionType == protos.SubscriptionType_BUCKET {
+	if unsubscription.SubscriptionType == protos.SubscriptionType_BUCKET {
 		s.bucketSubscribersLock.RLock()
-		streamer, ok = s.bucketSubscriberStreams[subscriberID]
+		streamer, ok = s.bucketSubscriberStreams[unsubscription.SubscriberID]
 		s.bucketSubscribersLock.RUnlock()
-	} else if unsubscribe.SubscriptionType == protos.SubscriptionType_OBJECT {
+	} else if unsubscription.SubscriptionType == protos.SubscriptionType_OBJECT {
 		s.objectSubscribersLock.RLock()
-		streamer, ok = s.objectSubscriberStreams[subscriberID]
+		streamer, ok = s.objectSubscriberStreams[unsubscription.SubscriberID]
 		s.objectSubscribersLock.RUnlock()
-	} else if unsubscribe.SubscriptionType == protos.SubscriptionType_PREFIX {
+	} else if unsubscription.SubscriptionType == protos.SubscriptionType_PREFIX {
 		s.prefixSubscribersLock.RLock()
-		streamer, ok = s.prefixSubscriberStreams[subscriberID]
+		streamer, ok = s.prefixSubscriberStreams[unsubscription.SubscriberID]
 		s.prefixSubscribersLock.RUnlock()
 	}
 	if !ok {
 		return nil
 	}
-	s.removeSubscriber(streamer, unsubscribe, subscriberID)
+	s.removeSubscriber(streamer, unsubscription, unsubscription.SubscriberID)
 	return nil
 }

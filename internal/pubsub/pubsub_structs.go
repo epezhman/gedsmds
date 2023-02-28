@@ -28,6 +28,5 @@ type Service struct {
 	prefixSubscriberStreams map[string]*SubscriberStream
 	prefixSubscribers       map[string][]string
 
-	//UpdatedBucket chan *protos.Bucket
 	UpdatedObject chan *protos.Object
 }
