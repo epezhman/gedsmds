@@ -40,11 +40,12 @@ func (s *Service) runPubSubEventListeners() {
 		//		BucketID:         bucket.Bucket,
 		//	}, nil, bucket)
 		case object := <-s.UpdatedObject:
+			bucket := &protos.Bucket{Bucket: object.Id.Bucket}
 			go s.matchSubscriptions(&protos.SubscriptionEvent{
 				SubscriptionType: protos.SubscriptionType_OBJECT,
 				Key:              object.Id.Key,
+				BucketID:         bucket.Bucket,
 			}, object, nil)
-			bucket := &protos.Bucket{Bucket: object.Id.Bucket}
 			go s.matchSubscriptions(&protos.SubscriptionEvent{
 				SubscriptionType: protos.SubscriptionType_BUCKET,
 				BucketID:         bucket.Bucket,
