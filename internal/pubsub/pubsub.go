@@ -69,7 +69,6 @@ func (s *Service) Subscribe(subscription *protos.SubscriptionEvent,
 			stream:   stream,
 			finished: finished,
 		}
-		logger.InfoLogger.Println(s.objectSubscribers)
 		s.objectSubscribersLock.Unlock()
 	} else if subscription.SubscriptionType == protos.SubscriptionType_PREFIX {
 		s.prefixSubscribersLock.Lock()
