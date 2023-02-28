@@ -109,8 +109,6 @@ func (s *Service) Subscribe(subscription *protos.SubscriptionEvent,
 
 func (s *Service) matchSubscriptions(subscription *protos.SubscriptionEvent,
 	object *protos.Object, bucket *protos.Bucket) {
-	logger.InfoLogger.Println("matching subscribers")
-
 	var subscribers []string
 	var currentSubscribers []string
 	var ok bool
