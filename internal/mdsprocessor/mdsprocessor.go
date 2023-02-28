@@ -19,7 +19,7 @@ func InitService() *Service {
 
 func (s *Service) GetConnectionInformation() string {
 	currentIP := connpool.GetOutboundIP()
-	logger.InfoLogger.Println("Found my IP:", currentIP)
+	logger.InfoLogger.Println("found my IP:", currentIP)
 	return currentIP
 }
 
@@ -27,6 +27,7 @@ func (s *Service) RegisterObjectStore(objectStore *protos.ObjectStoreConfig) err
 	if err := s.kvStore.RegisterObjectStore(objectStore); err != nil {
 		return err
 	}
+	logger.InfoLogger.Println("objectStore create %+v", objectStore)
 	return nil
 }
 
@@ -38,6 +39,7 @@ func (s *Service) CreateBucket(bucket *protos.Bucket) error {
 	if err := s.kvStore.CreateBucket(bucket); err != nil {
 		return err
 	}
+	logger.InfoLogger.Println("bucket create %+v", bucket)
 	return nil
 }
 
@@ -45,6 +47,7 @@ func (s *Service) DeleteBucket(bucket *protos.Bucket) error {
 	if err := s.kvStore.DeleteBucket(bucket); err != nil {
 		return err
 	}
+	logger.InfoLogger.Println("bucket delete %+v", bucket)
 	return nil
 }
 
@@ -63,6 +66,8 @@ func (s *Service) CreateObject(object *protos.Object) error {
 	if err := s.kvStore.CreateObject(object); err != nil {
 		return err
 	}
+	logger.InfoLogger.Println("object create %+v", object)
+
 	if config.Config.PubSubEnabled {
 		s.pubsub.UpdatedObject <- object
 	}
