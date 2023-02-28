@@ -143,6 +143,7 @@ func (s *Service) sendSubscriptions(subscription *protos.SubscriptionEvent, subs
 	object *protos.Object, bucket *protos.Bucket) {
 	var streamer *SubscriberStream
 	var ok bool
+	logger.InfoLogger.Println("send subscription", subscriberID)
 	if subscription.SubscriptionType == protos.SubscriptionType_BUCKET {
 		s.bucketSubscribersLock.RLock()
 		streamer, ok = s.bucketSubscriberStreams[subscriberID]
