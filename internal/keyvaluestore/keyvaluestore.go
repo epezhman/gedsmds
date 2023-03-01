@@ -156,16 +156,13 @@ func (kv *Service) LookupBucketByName(bucketName string) error {
 }
 
 func (kv *Service) CreateObject(object *protos.Object) error {
-	//if err := kv.LookupBucketByName(object.Id.Bucket); err != nil {
-	//	return err
-	//}
+	if err := kv.LookupBucketByName(object.Id.Bucket); err != nil {
+		logger.ErrorLogger.Println("bucket does not exist: ", object.Id.Bucket)
+	}
 	kv.ObjectsLock.Lock()
 	defer kv.ObjectsLock.Unlock()
 	objectId := kv.createObjectKey(object)
-	logger.InfoLogger.Println(objectId)
-
 	if _, ok := kv.Objects[objectId]; ok {
-		logger.InfoLogger.Println(objectId)
 		logger.InfoLogger.Println("object already exists %+v", object)
 	}
 	kv.Objects[objectId] = object
