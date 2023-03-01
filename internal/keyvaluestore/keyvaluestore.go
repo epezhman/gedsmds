@@ -162,6 +162,8 @@ func (kv *Service) CreateObject(object *protos.Object) error {
 	kv.ObjectsLock.Lock()
 	defer kv.ObjectsLock.Unlock()
 	objectId := kv.createObjectKey(object)
+	logger.InfoLogger.Println(objectId)
+
 	if _, ok := kv.Objects[objectId]; ok {
 		logger.InfoLogger.Println(objectId)
 		logger.InfoLogger.Println("object already exists %+v", object)
