@@ -1,4 +1,4 @@
-## Creating Keys and Certificates for nodes and clients
+## Creating Keys and Certificates
 
 Tutorial for creating the cert.pem and key.pem: [Link](https://blog.dnsimple.com/2017/08/how-to-test-golang-https-services/)
 Also nice details: [Link](https://blog.gopheracademy.com/advent-2019/go-grps-and-tls/)
