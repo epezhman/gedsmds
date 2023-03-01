@@ -42,8 +42,9 @@ func (s *Service) runPubSubEventListeners() {
 			}, object, nil)
 			go s.matchSubscriptions(&protos.SubscriptionEvent{
 				SubscriptionType: protos.SubscriptionType_BUCKET,
+				Key:              object.Id.Key,
 				BucketID:         bucket.Bucket,
-			}, nil, bucket)
+			}, object, bucket)
 		}
 	}
 }
