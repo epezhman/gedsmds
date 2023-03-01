@@ -203,6 +203,7 @@ func (s *Service) removeElementFromSlice(subscribers []string, subscriberID stri
 }
 
 func (s *Service) Unsubscribe(unsubscription *protos.SubscriptionEvent) error {
+	logger.InfoLogger.Println("got unsubscribe %+v ", unsubscription)
 	var streamer *SubscriberStream
 	var ok bool
 	if unsubscription.SubscriptionType == protos.SubscriptionType_BUCKET {

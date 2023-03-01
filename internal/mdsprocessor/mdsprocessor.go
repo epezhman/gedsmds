@@ -66,8 +66,6 @@ func (s *Service) CreateObject(object *protos.Object) error {
 	if err := s.kvStore.CreateObject(object); err != nil {
 		return err
 	}
-	logger.InfoLogger.Println("object create %+v", object)
-
 	if config.Config.PubSubEnabled {
 		s.pubsub.UpdatedObject <- object
 	}
