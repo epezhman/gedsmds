@@ -156,9 +156,9 @@ func (kv *Service) LookupBucketByName(bucketName string) error {
 }
 
 func (kv *Service) CreateObject(object *protos.Object) error {
-	if err := kv.LookupBucketByName(object.Id.Bucket); err != nil {
-		return err
-	}
+	//if err := kv.LookupBucketByName(object.Id.Bucket); err != nil {
+	//	return err
+	//}
 	kv.ObjectsLock.Lock()
 	defer kv.ObjectsLock.Unlock()
 	objectId := kv.createObjectKey(object)
