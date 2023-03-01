@@ -13,6 +13,7 @@ type Configuration struct {
 	MDSPort                  string `mapstructure:"METADATASERVER_PORT"`
 	PubSubEnabled            bool   `mapstructure:"PUBSUB_ENABLED"`
 	PersistentStorageEnabled bool   `mapstructure:"PERSISTENT_STORAGE_ENABLED"`
+	RepopulateCacheEnabled   bool   `mapstructure:"REPOPULATE_CACHE_ENABLED"`
 }
 
 func init() {

@@ -28,7 +28,7 @@ func InitKeyValueStoreService() *Service {
 }
 
 func (kv *Service) populateCache() {
-	if config.Config.PersistentStorageEnabled {
+	if config.Config.PersistentStorageEnabled && config.Config.RepopulateCacheEnabled {
 		go kv.populateObjectStoreConfig()
 		go kv.populateBuckets()
 		go kv.populateObjects()
