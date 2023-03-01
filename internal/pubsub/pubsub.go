@@ -158,7 +158,7 @@ func (s *Service) sendSubscriptions(subscription *protos.SubscriptionEvent, subs
 		s.removeSubscriber(streamer, subscription, subscriberID)
 	}
 	logger.InfoLogger.Println("sending subscription: ", subscription.BucketID,
-		subscription.BucketID, subscriberID)
+		subscription.Key, subscriberID)
 }
 
 func (s *Service) removeSubscriber(streamer *SubscriberStream, subscription *protos.SubscriptionEvent, subscriberID string) {
