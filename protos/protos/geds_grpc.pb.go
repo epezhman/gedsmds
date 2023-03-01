@@ -31,7 +31,8 @@ type MetadataServiceClient interface {
 	DeletePrefix(ctx context.Context, in *ObjectID, opts ...grpc.CallOption) (*StatusResponse, error)
 	Lookup(ctx context.Context, in *ObjectID, opts ...grpc.CallOption) (*ObjectResponse, error)
 	List(ctx context.Context, in *ObjectListRequest, opts ...grpc.CallOption) (*ObjectListResponse, error)
-	//rpc Publish(stream SubscriptionEvent) returns (EmptyParams);
+	CreateObjectStream(ctx context.Context, opts ...grpc.CallOption) (MetadataService_CreateObjectStreamClient, error)
+	UpdateObjectStream(ctx context.Context, opts ...grpc.CallOption) (MetadataService_UpdateObjectStreamClient, error)
 	Subscribe(ctx context.Context, in *SubscriptionEvent, opts ...grpc.CallOption) (MetadataService_SubscribeClient, error)
 	Unsubscribe(ctx context.Context, in *SubscriptionEvent, opts ...grpc.CallOption) (*StatusResponse, error)
 }
@@ -161,8 +162,76 @@ func (c *metadataServiceClient) List(ctx context.Context, in *ObjectListRequest,
 	return out, nil
 }
 
+func (c *metadataServiceClient) CreateObjectStream(ctx context.Context, opts ...grpc.CallOption) (MetadataService_CreateObjectStreamClient, error) {
+	stream, err := c.cc.NewStream(ctx, &MetadataService_ServiceDesc.Streams[0], "/geds.rpc.MetadataService/CreateObjectStream", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &metadataServiceCreateObjectStreamClient{stream}
+	return x, nil
+}
+
+type MetadataService_CreateObjectStreamClient interface {
+	Send(*Object) error
+	CloseAndRecv() (*StatusResponse, error)
+	grpc.ClientStream
+}
+
+type metadataServiceCreateObjectStreamClient struct {
+	grpc.ClientStream
+}
+
+func (x *metadataServiceCreateObjectStreamClient) Send(m *Object) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *metadataServiceCreateObjectStreamClient) CloseAndRecv() (*StatusResponse, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(StatusResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *metadataServiceClient) UpdateObjectStream(ctx context.Context, opts ...grpc.CallOption) (MetadataService_UpdateObjectStreamClient, error) {
+	stream, err := c.cc.NewStream(ctx, &MetadataService_ServiceDesc.Streams[1], "/geds.rpc.MetadataService/UpdateObjectStream", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &metadataServiceUpdateObjectStreamClient{stream}
+	return x, nil
+}
+
+type MetadataService_UpdateObjectStreamClient interface {
+	Send(*Object) error
+	CloseAndRecv() (*StatusResponse, error)
+	grpc.ClientStream
+}
+
+type metadataServiceUpdateObjectStreamClient struct {
+	grpc.ClientStream
+}
+
+func (x *metadataServiceUpdateObjectStreamClient) Send(m *Object) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *metadataServiceUpdateObjectStreamClient) CloseAndRecv() (*StatusResponse, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(StatusResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 func (c *metadataServiceClient) Subscribe(ctx context.Context, in *SubscriptionEvent, opts ...grpc.CallOption) (MetadataService_SubscribeClient, error) {
-	stream, err := c.cc.NewStream(ctx, &MetadataService_ServiceDesc.Streams[0], "/geds.rpc.MetadataService/Subscribe", opts...)
+	stream, err := c.cc.NewStream(ctx, &MetadataService_ServiceDesc.Streams[2], "/geds.rpc.MetadataService/Subscribe", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +288,8 @@ type MetadataServiceServer interface {
 	DeletePrefix(context.Context, *ObjectID) (*StatusResponse, error)
 	Lookup(context.Context, *ObjectID) (*ObjectResponse, error)
 	List(context.Context, *ObjectListRequest) (*ObjectListResponse, error)
-	//rpc Publish(stream SubscriptionEvent) returns (EmptyParams);
+	CreateObjectStream(MetadataService_CreateObjectStreamServer) error
+	UpdateObjectStream(MetadataService_UpdateObjectStreamServer) error
 	Subscribe(*SubscriptionEvent, MetadataService_SubscribeServer) error
 	Unsubscribe(context.Context, *SubscriptionEvent) (*StatusResponse, error)
 }
@@ -266,6 +336,12 @@ func (UnimplementedMetadataServiceServer) Lookup(context.Context, *ObjectID) (*O
 }
 func (UnimplementedMetadataServiceServer) List(context.Context, *ObjectListRequest) (*ObjectListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
+}
+func (UnimplementedMetadataServiceServer) CreateObjectStream(MetadataService_CreateObjectStreamServer) error {
+	return status.Errorf(codes.Unimplemented, "method CreateObjectStream not implemented")
+}
+func (UnimplementedMetadataServiceServer) UpdateObjectStream(MetadataService_UpdateObjectStreamServer) error {
+	return status.Errorf(codes.Unimplemented, "method UpdateObjectStream not implemented")
 }
 func (UnimplementedMetadataServiceServer) Subscribe(*SubscriptionEvent, MetadataService_SubscribeServer) error {
 	return status.Errorf(codes.Unimplemented, "method Subscribe not implemented")
@@ -519,6 +595,58 @@ func _MetadataService_List_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MetadataService_CreateObjectStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(MetadataServiceServer).CreateObjectStream(&metadataServiceCreateObjectStreamServer{stream})
+}
+
+type MetadataService_CreateObjectStreamServer interface {
+	SendAndClose(*StatusResponse) error
+	Recv() (*Object, error)
+	grpc.ServerStream
+}
+
+type metadataServiceCreateObjectStreamServer struct {
+	grpc.ServerStream
+}
+
+func (x *metadataServiceCreateObjectStreamServer) SendAndClose(m *StatusResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *metadataServiceCreateObjectStreamServer) Recv() (*Object, error) {
+	m := new(Object)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func _MetadataService_UpdateObjectStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(MetadataServiceServer).UpdateObjectStream(&metadataServiceUpdateObjectStreamServer{stream})
+}
+
+type MetadataService_UpdateObjectStreamServer interface {
+	SendAndClose(*StatusResponse) error
+	Recv() (*Object, error)
+	grpc.ServerStream
+}
+
+type metadataServiceUpdateObjectStreamServer struct {
+	grpc.ServerStream
+}
+
+func (x *metadataServiceUpdateObjectStreamServer) SendAndClose(m *StatusResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *metadataServiceUpdateObjectStreamServer) Recv() (*Object, error) {
+	m := new(Object)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 func _MetadataService_Subscribe_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(SubscriptionEvent)
 	if err := stream.RecvMsg(m); err != nil {
@@ -623,6 +751,16 @@ var MetadataService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "CreateObjectStream",
+			Handler:       _MetadataService_CreateObjectStream_Handler,
+			ClientStreams: true,
+		},
+		{
+			StreamName:    "UpdateObjectStream",
+			Handler:       _MetadataService_UpdateObjectStream_Handler,
+			ClientStreams: true,
+		},
 		{
 			StreamName:    "Subscribe",
 			Handler:       _MetadataService_Subscribe_Handler,

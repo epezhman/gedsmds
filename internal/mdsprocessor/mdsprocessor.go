@@ -74,6 +74,16 @@ func (s *Service) CreateObject(object *protos.Object) error {
 	return nil
 }
 
+func (s *Service) CreateObjectStream(object *protos.Object) {
+	if err := s.kvStore.CreateObject(object); err != nil {
+		return
+	}
+	logger.InfoLogger.Println("object create %+v", object)
+	if config.Config.PubSubEnabled {
+		s.pubsub.UpdatedObject <- object
+	}
+}
+
 func (s *Service) UpdateObject(object *protos.Object) error {
 	if err := s.kvStore.UpdateObject(object); err != nil {
 		return err
@@ -82,6 +92,15 @@ func (s *Service) UpdateObject(object *protos.Object) error {
 		s.pubsub.UpdatedObject <- object
 	}
 	return nil
+}
+
+func (s *Service) UpdateObjectStream(object *protos.Object) {
+	if err := s.kvStore.UpdateObject(object); err != nil {
+		return
+	}
+	if config.Config.PubSubEnabled {
+		s.pubsub.UpdatedObject <- object
+	}
 }
 
 func (s *Service) DeleteObject(objectID *protos.ObjectID) error {

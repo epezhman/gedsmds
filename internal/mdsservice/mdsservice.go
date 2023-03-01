@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/IBM/gedsmds/internal/mdsprocessor"
 	"github.com/IBM/gedsmds/protos/protos"
+	"io"
 )
 
 func NewService() *Service {
@@ -95,6 +96,32 @@ func (s *Service) List(_ context.Context, _ *protos.ObjectListRequest) (*protos.
 	return &protos.ObjectListResponse{
 		Error: &protos.StatusResponse{Code: protos.StatusCode_NOT_FOUND},
 	}, nil
+}
+
+func (s *Service) CreateObjectStream(stream protos.MetadataService_CreateObjectStreamServer) error {
+	for {
+		object, err := stream.Recv()
+		if err == io.EOF {
+			return stream.SendAndClose(&protos.StatusResponse{Code: protos.StatusCode_OK})
+		}
+		if err != nil {
+			return err
+		}
+		s.processor.CreateObjectStream(object)
+	}
+}
+
+func (s *Service) UpdateObjectStream(stream protos.MetadataService_UpdateObjectStreamServer) error {
+	for {
+		object, err := stream.Recv()
+		if err == io.EOF {
+			return stream.SendAndClose(&protos.StatusResponse{Code: protos.StatusCode_OK})
+		}
+		if err != nil {
+			return err
+		}
+		s.processor.UpdateObjectStream(object)
+	}
 }
 
 func (s *Service) Subscribe(subscription *protos.SubscriptionEvent,
