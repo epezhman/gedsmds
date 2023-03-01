@@ -124,7 +124,6 @@ func (s *Service) matchSubscriptions(subscription *protos.SubscriptionEvent,
 	if !ok {
 		return
 	}
-	logger.InfoLogger.Println("matching subscribers: ", subscribers)
 	for _, subscriberID := range subscribers {
 		s.sendSubscriptions(subscription, subscriberID, object, bucket)
 	}
@@ -158,7 +157,8 @@ func (s *Service) sendSubscriptions(subscription *protos.SubscriptionEvent, subs
 		logger.ErrorLogger.Println("could not send the proposal response to subscriber " + subscriberID)
 		s.removeSubscriber(streamer, subscription, subscriberID)
 	}
-	logger.InfoLogger.Println("sending publication subscriberID", subscriberID)
+	logger.InfoLogger.Println("sending subscription: ", subscription.BucketID,
+		subscription.BucketID, subscriberID)
 }
 
 func (s *Service) removeSubscriber(streamer *SubscriberStream, subscription *protos.SubscriptionEvent, subscriberID string) {
