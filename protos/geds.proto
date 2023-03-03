@@ -82,11 +82,14 @@ message SubscriptionEvent {
   string prefix = 5;
 }
 
-message SubscriptionResponse {
-  SubscriptionType subscriptionType = 1;
-  Object object = 2;
-  Bucket bucket = 3;
+message SubscriptionStreamEvent {
+  string subscriberID = 1;
 }
+
+//message SubscriptionResponse {
+//  SubscriptionType subscriptionType = 1;
+//  Object object = 2;
+//}
 
 service MetadataService {
   rpc GetConnectionInformation(EmptyParams) returns (ConnectionInformation);
@@ -103,9 +106,9 @@ service MetadataService {
   rpc Lookup(ObjectID) returns (ObjectResponse);
   rpc List(ObjectListRequest) returns (ObjectListResponse);
 
-  rpc CreateObjectStream(stream Object) returns (StatusResponse);
-  rpc UpdateObjectStream(stream Object) returns (StatusResponse);
-  rpc Subscribe(SubscriptionEvent) returns (stream SubscriptionResponse);
+  rpc CreateOrUpdateObjectStream(stream Object) returns (StatusResponse);
+  rpc Subscribe(SubscriptionEvent) returns (StatusResponse);
+  rpc SubscribeStream(SubscriptionStreamEvent) returns (stream Object);
   rpc Unsubscribe(SubscriptionEvent) returns (StatusResponse);
 }
 

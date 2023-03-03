@@ -9,24 +9,19 @@ import (
 const channelBufferSize = 200
 
 type SubscriberStream struct {
-	stream   protos.MetadataService_SubscribeServer
-	finished chan<- bool
+	stream               protos.MetadataService_SubscribeStreamServer
+	finished             chan<- bool
+	subscriptionsCounter int
 }
 
 type Service struct {
 	kvStore *keyvaluestore.Service
 
-	bucketSubscribersLock   *sync.RWMutex
-	bucketSubscriberStreams map[string]*SubscriberStream
-	bucketSubscribers       map[string][]string
+	subscribersStreamLock *sync.RWMutex
+	subscriberStreams     map[string]*SubscriberStream
 
-	objectSubscribersLock   *sync.RWMutex
-	objectSubscriberStreams map[string]*SubscriberStream
-	objectSubscribers       map[string][]string
+	subscribedItemsLock *sync.RWMutex
+	subscribedItems     map[string][]string
 
-	prefixSubscribersLock   *sync.RWMutex
-	prefixSubscriberStreams map[string]*SubscriberStream
-	prefixSubscribers       map[string][]string
-
-	UpdatedObject chan *protos.Object
+	Publication chan *protos.Object
 }

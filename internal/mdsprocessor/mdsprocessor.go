@@ -67,19 +67,18 @@ func (s *Service) CreateObject(object *protos.Object) error {
 		return err
 	}
 	if config.Config.PubSubEnabled {
-		s.pubsub.UpdatedObject <- object
+		s.pubsub.Publication <- object
 	}
 	return nil
 }
 
-func (s *Service) CreateObjectStream(object *protos.Object) {
+func (s *Service) CreateOrUpdateObjectStream(object *protos.Object) {
 	if err := s.kvStore.CreateObject(object); err != nil {
 		logger.ErrorLogger.Println(err)
 		return
 	}
-	//logger.InfoLogger.Println("object create %+v", object)
 	if config.Config.PubSubEnabled {
-		s.pubsub.UpdatedObject <- object
+		s.pubsub.Publication <- object
 	}
 }
 
@@ -88,19 +87,9 @@ func (s *Service) UpdateObject(object *protos.Object) error {
 		return err
 	}
 	if config.Config.PubSubEnabled {
-		s.pubsub.UpdatedObject <- object
+		s.pubsub.Publication <- object
 	}
 	return nil
-}
-
-func (s *Service) UpdateObjectStream(object *protos.Object) {
-	if err := s.kvStore.UpdateObject(object); err != nil {
-		logger.ErrorLogger.Println(err)
-		return
-	}
-	if config.Config.PubSubEnabled {
-		s.pubsub.UpdatedObject <- object
-	}
 }
 
 func (s *Service) DeleteObject(objectID *protos.ObjectID) error {
@@ -108,7 +97,7 @@ func (s *Service) DeleteObject(objectID *protos.ObjectID) error {
 		return err
 	}
 	if config.Config.PubSubEnabled {
-		s.pubsub.UpdatedObject <- &protos.Object{
+		s.pubsub.Publication <- &protos.Object{
 			Id: objectID,
 		}
 	}
@@ -136,9 +125,13 @@ func (s *Service) List(_ *protos.ObjectListRequest) (*protos.ObjectListResponse,
 	}, nil
 }
 
-func (s *Service) Subscribe(subscription *protos.SubscriptionEvent,
-	stream protos.MetadataService_SubscribeServer) error {
-	return s.pubsub.Subscribe(subscription, stream)
+func (s *Service) Subscribe(subscription *protos.SubscriptionEvent) error {
+	return s.pubsub.Subscribe(subscription)
+}
+
+func (s *Service) SubscribeStream(subscription *protos.SubscriptionStreamEvent,
+	stream protos.MetadataService_SubscribeStreamServer) error {
+	return s.pubsub.SubscribeStream(subscription, stream)
 }
 
 func (s *Service) Unsubscribe(unsubscribe *protos.SubscriptionEvent) error {

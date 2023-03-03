@@ -98,7 +98,7 @@ func (s *Service) List(_ context.Context, _ *protos.ObjectListRequest) (*protos.
 	}, nil
 }
 
-func (s *Service) CreateObjectStream(stream protos.MetadataService_CreateObjectStreamServer) error {
+func (s *Service) CreateOrUpdateObjectStream(stream protos.MetadataService_CreateOrUpdateObjectStreamServer) error {
 	for {
 		object, err := stream.Recv()
 		if err == io.EOF {
@@ -107,26 +107,20 @@ func (s *Service) CreateObjectStream(stream protos.MetadataService_CreateObjectS
 		if err != nil {
 			return err
 		}
-		s.processor.CreateObjectStream(object)
+		s.processor.CreateOrUpdateObjectStream(object)
 	}
 }
 
-func (s *Service) UpdateObjectStream(stream protos.MetadataService_UpdateObjectStreamServer) error {
-	for {
-		object, err := stream.Recv()
-		if err == io.EOF {
-			return stream.SendAndClose(&protos.StatusResponse{Code: protos.StatusCode_OK})
-		}
-		if err != nil {
-			return err
-		}
-		s.processor.UpdateObjectStream(object)
+func (s *Service) Subscribe(_ context.Context, subscription *protos.SubscriptionEvent) (*protos.StatusResponse, error) {
+	if err := s.processor.Subscribe(subscription); err != nil {
+		return &protos.StatusResponse{Code: protos.StatusCode_INTERNAL}, err
 	}
+	return &protos.StatusResponse{Code: protos.StatusCode_OK}, nil
 }
 
-func (s *Service) Subscribe(subscription *protos.SubscriptionEvent,
-	stream protos.MetadataService_SubscribeServer) error {
-	return s.processor.Subscribe(subscription, stream)
+func (s *Service) SubscribeStream(subscription *protos.SubscriptionStreamEvent,
+	stream protos.MetadataService_SubscribeStreamServer) error {
+	return s.processor.SubscribeStream(subscription, stream)
 }
 
 func (s *Service) Unsubscribe(_ context.Context, unsubscribe *protos.SubscriptionEvent) (*protos.StatusResponse, error) {

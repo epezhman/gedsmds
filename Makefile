@@ -60,17 +60,6 @@ run-mds:
 	@echo "Running MDS ..."
 	@${GO_PATH} run ./cmd/mds
 
-## run-mock-client: run the MockClient
-run-mock-client:
-	@echo "Running Mock-Client ..."
-	@${GO_PATH} run ./cmd/mockclient
-
-## run-playground: run some experimental codes in ./cmd/playground
-run-playground:
-	@echo "Running Playground ..."
-	@${GO_PATH} run -race ./cmd/playground
-	#@${GO_PATH} run  ./cmd/playground
-
 ## git-commit: commit all files
 git-commit:
 	@echo "Commit"

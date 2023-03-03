@@ -188,6 +188,22 @@ func (kv *Service) UpdateObject(object *protos.Object) error {
 	return nil
 }
 
+func (kv *Service) CreateOrUpdateObject(object *protos.Object) error {
+	if err := kv.LookupBucketByName(object.Id.Bucket); err != nil {
+		logger.ErrorLogger.Println("bucket does not exist: ", object.Id.Bucket)
+	}
+	kv.ObjectsLock.Lock()
+	defer kv.ObjectsLock.Unlock()
+	kv.Objects[kv.createObjectKey(object)] = object
+	if config.Config.PersistentStorageEnabled {
+		kv.dbConnection.ObjectChan <- &db.OperationParams{
+			Object: object,
+			Type:   db.PUT,
+		}
+	}
+	return nil
+}
+
 func (kv *Service) DeleteObject(objectID *protos.ObjectID) error {
 	kv.ObjectsLock.Lock()
 	defer kv.ObjectsLock.Unlock()
