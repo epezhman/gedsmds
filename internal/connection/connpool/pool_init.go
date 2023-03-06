@@ -36,7 +36,7 @@ func factoryNode(ip string) (*grpc.ClientConn, error) {
 func GetMDSConnectionsStream() map[string]*Pool {
 	serverPool := make(map[string]*Pool)
 	name := "127.0.0.1"
-	pool, err := NewPoolWithIP(factoryNode, name, 1, 1, 10*time.Second)
+	pool, err := NewPoolWithIP(factoryNode, name, 10, 10, 10*time.Second)
 	if err != nil {
 		logger.FatalLogger.Fatalln("Failed to create gRPC pool:", err)
 	}

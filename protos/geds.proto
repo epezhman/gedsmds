@@ -79,7 +79,6 @@ message SubscriptionEvent {
   string subscriberID = 2;
   string bucketID = 3;
   string key = 4;
-  string prefix = 5;
 }
 
 message SubscriptionStreamEvent {

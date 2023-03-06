@@ -30,7 +30,6 @@ func (s *Service) runPubSubEventListeners() {
 }
 
 func (s *Service) Subscribe(subscription *protos.SubscriptionEvent) error {
-	logger.InfoLogger.Println("got subscription %+v ", subscription)
 	subscribedItemId, err := s.createSubscriptionKey(subscription)
 	if err != nil {
 		return err
@@ -53,8 +52,6 @@ func (s *Service) Subscribe(subscription *protos.SubscriptionEvent) error {
 
 func (s *Service) SubscribeStream(subscription *protos.SubscriptionStreamEvent,
 	stream protos.MetadataService_SubscribeStreamServer) error {
-	logger.InfoLogger.Println("got subscription %+v ", subscription)
-
 	var finished chan bool
 	s.subscribersStreamLock.Lock()
 	if streamer, ok := s.subscriberStreams[subscription.SubscriberID]; !ok {
@@ -120,13 +117,13 @@ func (s *Service) sendSubscriptions(subscription *protos.Object, subscriberID st
 		logger.ErrorLogger.Println("could not send the proposal response to subscriber " + subscriberID)
 		s.removeSubscriberStream(streamer)
 	}
-	logger.InfoLogger.Println("sending subscription: ", subscription.Id.Bucket,
-		subscription.Id.Key, subscriberID)
 }
 
 func (s *Service) removeSubscriberStream(streamer *SubscriberStream) {
-	streamer.finished <- true
-	streamer.stream = nil
+	if streamer.stream != nil {
+		streamer.finished <- true
+		streamer.stream = nil
+	}
 }
 
 func (s *Service) removeSubscriber(unsubscription *protos.SubscriptionEvent) error {
@@ -153,6 +150,5 @@ func (s *Service) removeSubscriber(unsubscription *protos.SubscriptionEvent) err
 }
 
 func (s *Service) Unsubscribe(unsubscription *protos.SubscriptionEvent) error {
-	logger.InfoLogger.Println("got unsubscribe %+v ", unsubscription)
 	return s.removeSubscriber(unsubscription)
 }

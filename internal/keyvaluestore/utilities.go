@@ -5,5 +5,5 @@ import (
 )
 
 func (kv *Service) createObjectKey(object *protos.Object) string {
-	return object.Id.Bucket + "-" + object.Id.Key
+	return object.Id.Bucket + "/" + object.Id.Key
 }

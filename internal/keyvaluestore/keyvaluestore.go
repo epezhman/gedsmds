@@ -7,6 +7,7 @@ import (
 	"github.com/IBM/gedsmds/internal/logger"
 	"github.com/IBM/gedsmds/protos/protos"
 	"golang.org/x/exp/maps"
+	"strings"
 	"sync"
 )
 
@@ -20,6 +21,7 @@ func InitKeyValueStoreService() *Service {
 		BucketsLock: &sync.RWMutex{},
 		Buckets:     map[string]*protos.Bucket{},
 
+		// possible bottleneck if every item written in the same map
 		ObjectsLock: &sync.RWMutex{},
 		Objects:     map[string]*protos.Object{},
 	}
@@ -53,6 +55,7 @@ func (kv *Service) populateBuckets() {
 	} else {
 		kv.BucketsLock.Lock()
 		for _, bucket := range allBuckets {
+			logger.InfoLogger.Println(bucket)
 			kv.Buckets[bucket.Bucket] = bucket
 		}
 		kv.BucketsLock.Unlock()
@@ -224,8 +227,29 @@ func (kv *Service) DeleteObject(objectID *protos.ObjectID) error {
 	return nil
 }
 
-func (kv *Service) DeleteObjectPrefix(_ *protos.ObjectID) error {
-	return nil
+func (kv *Service) DeleteObjectPrefix(objectID *protos.ObjectID) ([]*protos.Object, error) {
+	var objects []*protos.Object
+	objectId := kv.createObjectKey(&protos.Object{
+		Id: objectID,
+	})
+	// this will be slow, needs to be optimized
+	kv.ObjectsLock.Lock()
+	for key, object := range kv.Objects {
+		if strings.HasPrefix(key, objectId) {
+			objects = append(objects, object)
+			delete(kv.Objects, objectId)
+		}
+	}
+	kv.ObjectsLock.Unlock()
+	if config.Config.PersistentStorageEnabled {
+		for _, object := range objects {
+			kv.dbConnection.ObjectChan <- &db.OperationParams{
+				Object: object,
+				Type:   db.DELETE,
+			}
+		}
+	}
+	return objects, nil
 }
 
 func (kv *Service) LookupObject(objectID *protos.ObjectID) (*protos.ObjectResponse, error) {
@@ -242,6 +266,17 @@ func (kv *Service) LookupObject(objectID *protos.ObjectID) (*protos.ObjectRespon
 	}, nil
 }
 
-func (kv *Service) ListObjects() error {
-	return nil
+func (kv *Service) ListObjects(objectListRequest *protos.ObjectListRequest) (*protos.ObjectListResponse, error) {
+	objects := &protos.ObjectListResponse{Results: []*protos.Object{}, CommonPrefixes: []string{}}
+	objectId := kv.createObjectKey(&protos.Object{
+		Id: objectListRequest.Prefix,
+	})
+	kv.ObjectsLock.RLock()
+	for key, object := range kv.Objects {
+		if strings.HasPrefix(key, objectId) {
+			objects.Results = append(objects.Results, object)
+		}
+	}
+	kv.ObjectsLock.RUnlock()
+	return objects, nil
 }

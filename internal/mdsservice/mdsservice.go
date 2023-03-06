@@ -21,7 +21,7 @@ func (s *Service) GetConnectionInformation(_ context.Context,
 func (s *Service) RegisterObjectStore(_ context.Context,
 	objectStore *protos.ObjectStoreConfig) (*protos.StatusResponse, error) {
 	if err := s.processor.RegisterObjectStore(objectStore); err != nil {
-		return &protos.StatusResponse{Code: protos.StatusCode_ALREADY_EXISTS}, err
+		return &protos.StatusResponse{Code: protos.StatusCode_ALREADY_EXISTS}, nil
 	}
 	return &protos.StatusResponse{Code: protos.StatusCode_OK}, nil
 }
@@ -33,14 +33,14 @@ func (s *Service) ListObjectStores(_ context.Context,
 
 func (s *Service) CreateBucket(_ context.Context, bucket *protos.Bucket) (*protos.StatusResponse, error) {
 	if err := s.processor.CreateBucket(bucket); err != nil {
-		return &protos.StatusResponse{Code: protos.StatusCode_ALREADY_EXISTS}, err
+		return &protos.StatusResponse{Code: protos.StatusCode_ALREADY_EXISTS}, nil
 	}
 	return &protos.StatusResponse{Code: protos.StatusCode_OK}, nil
 }
 
 func (s *Service) DeleteBucket(_ context.Context, bucket *protos.Bucket) (*protos.StatusResponse, error) {
 	if err := s.processor.DeleteBucket(bucket); err != nil {
-		return &protos.StatusResponse{Code: protos.StatusCode_NOT_FOUND}, err
+		return &protos.StatusResponse{Code: protos.StatusCode_NOT_FOUND}, nil
 	}
 	return &protos.StatusResponse{Code: protos.StatusCode_OK}, nil
 }
@@ -51,34 +51,37 @@ func (s *Service) ListBuckets(_ context.Context, _ *protos.EmptyParams) (*protos
 
 func (s *Service) LookupBucket(_ context.Context, bucket *protos.Bucket) (*protos.StatusResponse, error) {
 	if err := s.processor.LookupBucket(bucket); err != nil {
-		return &protos.StatusResponse{Code: protos.StatusCode_NOT_FOUND}, err
+		return &protos.StatusResponse{Code: protos.StatusCode_NOT_FOUND}, nil
 	}
 	return &protos.StatusResponse{Code: protos.StatusCode_OK}, nil
 }
 
 func (s *Service) Create(_ context.Context, object *protos.Object) (*protos.StatusResponse, error) {
 	if err := s.processor.CreateObject(object); err != nil {
-		return &protos.StatusResponse{Code: protos.StatusCode_ALREADY_EXISTS}, err
+		return &protos.StatusResponse{Code: protos.StatusCode_ALREADY_EXISTS}, nil
 	}
 	return &protos.StatusResponse{Code: protos.StatusCode_OK}, nil
 }
 
 func (s *Service) Update(_ context.Context, object *protos.Object) (*protos.StatusResponse, error) {
 	if err := s.processor.UpdateObject(object); err != nil {
-		return &protos.StatusResponse{Code: protos.StatusCode_ALREADY_EXISTS}, err
+		return &protos.StatusResponse{Code: protos.StatusCode_INTERNAL}, nil
 	}
 	return &protos.StatusResponse{Code: protos.StatusCode_OK}, nil
 }
 
 func (s *Service) Delete(_ context.Context, objectID *protos.ObjectID) (*protos.StatusResponse, error) {
 	if err := s.processor.DeleteObject(objectID); err != nil {
-		return &protos.StatusResponse{Code: protos.StatusCode_NOT_FOUND}, err
+		return &protos.StatusResponse{Code: protos.StatusCode_NOT_FOUND}, nil
 	}
 	return &protos.StatusResponse{Code: protos.StatusCode_OK}, nil
 }
 
-func (s *Service) DeletePrefix(_ context.Context, _ *protos.ObjectID) (*protos.StatusResponse, error) {
-	return &protos.StatusResponse{Code: protos.StatusCode_UNIMPLEMENTED}, nil
+func (s *Service) DeletePrefix(_ context.Context, objectID *protos.ObjectID) (*protos.StatusResponse, error) {
+	if err := s.processor.DeletePrefix(objectID); err != nil {
+		return &protos.StatusResponse{Code: protos.StatusCode_NOT_FOUND}, nil
+	}
+	return &protos.StatusResponse{Code: protos.StatusCode_OK}, nil
 }
 
 func (s *Service) Lookup(_ context.Context, objectID *protos.ObjectID) (*protos.ObjectResponse, error) {
@@ -92,10 +95,8 @@ func (s *Service) Lookup(_ context.Context, objectID *protos.ObjectID) (*protos.
 	return object, nil
 }
 
-func (s *Service) List(_ context.Context, _ *protos.ObjectListRequest) (*protos.ObjectListResponse, error) {
-	return &protos.ObjectListResponse{
-		Error: &protos.StatusResponse{Code: protos.StatusCode_NOT_FOUND},
-	}, nil
+func (s *Service) List(_ context.Context, objectListRequest *protos.ObjectListRequest) (*protos.ObjectListResponse, error) {
+	return s.processor.List(objectListRequest)
 }
 
 func (s *Service) CreateOrUpdateObjectStream(stream protos.MetadataService_CreateOrUpdateObjectStreamServer) error {
@@ -125,7 +126,7 @@ func (s *Service) SubscribeStream(subscription *protos.SubscriptionStreamEvent,
 
 func (s *Service) Unsubscribe(_ context.Context, unsubscribe *protos.SubscriptionEvent) (*protos.StatusResponse, error) {
 	if err := s.processor.Unsubscribe(unsubscribe); err != nil {
-		return &protos.StatusResponse{Code: protos.StatusCode_ABORTED}, err
+		return &protos.StatusResponse{Code: protos.StatusCode_NOT_FOUND}, nil
 	}
 	return &protos.StatusResponse{Code: protos.StatusCode_OK}, nil
 }

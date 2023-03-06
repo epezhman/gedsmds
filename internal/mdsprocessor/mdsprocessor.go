@@ -27,7 +27,6 @@ func (s *Service) RegisterObjectStore(objectStore *protos.ObjectStoreConfig) err
 	if err := s.kvStore.RegisterObjectStore(objectStore); err != nil {
 		return err
 	}
-	logger.InfoLogger.Println("objectStore create %+v", objectStore)
 	return nil
 }
 
@@ -39,7 +38,6 @@ func (s *Service) CreateBucket(bucket *protos.Bucket) error {
 	if err := s.kvStore.CreateBucket(bucket); err != nil {
 		return err
 	}
-	logger.InfoLogger.Println("bucket create %+v", bucket)
 	return nil
 }
 
@@ -47,7 +45,6 @@ func (s *Service) DeleteBucket(bucket *protos.Bucket) error {
 	if err := s.kvStore.DeleteBucket(bucket); err != nil {
 		return err
 	}
-	logger.InfoLogger.Println("bucket delete %+v", bucket)
 	return nil
 }
 
@@ -104,8 +101,17 @@ func (s *Service) DeleteObject(objectID *protos.ObjectID) error {
 	return nil
 }
 
-func (s *Service) DeletePrefix(_ *protos.ObjectID) (*protos.StatusResponse, error) {
-	return &protos.StatusResponse{Code: protos.StatusCode_UNIMPLEMENTED}, nil
+func (s *Service) DeletePrefix(objectID *protos.ObjectID) error {
+	objects, err := s.kvStore.DeleteObjectPrefix(objectID)
+	if err != nil {
+		return err
+	}
+	if config.Config.PubSubEnabled {
+		for _, object := range objects {
+			s.pubsub.Publication <- object
+		}
+	}
+	return nil
 }
 
 func (s *Service) LookupObject(objectID *protos.ObjectID) (*protos.ObjectResponse, error) {
@@ -113,16 +119,14 @@ func (s *Service) LookupObject(objectID *protos.ObjectID) (*protos.ObjectRespons
 	if err != nil {
 		return &protos.ObjectResponse{
 			Error: &protos.StatusResponse{Code: protos.StatusCode_NOT_FOUND},
-		}, err
+		}, nil
 	}
 	object.Error = &protos.StatusResponse{Code: protos.StatusCode_OK}
 	return object, nil
 }
 
-func (s *Service) List(_ *protos.ObjectListRequest) (*protos.ObjectListResponse, error) {
-	return &protos.ObjectListResponse{
-		Error: &protos.StatusResponse{Code: protos.StatusCode_NOT_FOUND},
-	}, nil
+func (s *Service) List(objectListRequest *protos.ObjectListRequest) (*protos.ObjectListResponse, error) {
+	return s.kvStore.ListObjects(objectListRequest)
 }
 
 func (s *Service) Subscribe(subscription *protos.SubscriptionEvent) error {
