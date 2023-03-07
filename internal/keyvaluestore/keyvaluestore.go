@@ -23,7 +23,7 @@ func InitKeyValueStoreService() *Service {
 
 		// possible bottleneck if every item written in the same map
 		ObjectsLock: &sync.RWMutex{},
-		Objects:     map[string]*protos.Object{},
+		Objects:     map[string]map[string]*Object{},
 	}
 	go kvStore.populateCache()
 	return kvStore
@@ -68,7 +68,10 @@ func (kv *Service) populateObjects() {
 	} else {
 		kv.ObjectsLock.Lock()
 		for _, object := range allObjects {
-			kv.Objects[kv.createObjectKey(object)] = object
+			if _, ok := kv.Objects[object.Id.Bucket]; !ok {
+				kv.Objects[object.Id.Bucket] = map[string]*Object{}
+			}
+			kv.Objects[object.Id.Bucket][object.Id.Key] = &Object{object: object, path: kv.getNestedPath(object.Id)}
 		}
 		kv.ObjectsLock.Unlock()
 	}
@@ -164,11 +167,13 @@ func (kv *Service) CreateObject(object *protos.Object) error {
 	}
 	kv.ObjectsLock.Lock()
 	defer kv.ObjectsLock.Unlock()
-	objectId := kv.createObjectKey(object)
-	if _, ok := kv.Objects[objectId]; ok {
+	if _, ok := kv.Objects[object.Id.Bucket][object.Id.Key]; ok {
 		logger.InfoLogger.Println("object already exists %+v", object)
 	}
-	kv.Objects[objectId] = object
+	if _, ok := kv.Objects[object.Id.Bucket]; !ok {
+		kv.Objects[object.Id.Bucket] = map[string]*Object{}
+	}
+	kv.Objects[object.Id.Bucket][object.Id.Key] = &Object{object: object, path: kv.getNestedPath(object.Id)}
 	if config.Config.PersistentStorageEnabled {
 		kv.dbConnection.ObjectChan <- &db.OperationParams{
 			Object: object,
@@ -181,7 +186,10 @@ func (kv *Service) CreateObject(object *protos.Object) error {
 func (kv *Service) UpdateObject(object *protos.Object) error {
 	kv.ObjectsLock.Lock()
 	defer kv.ObjectsLock.Unlock()
-	kv.Objects[kv.createObjectKey(object)] = object
+	if _, ok := kv.Objects[object.Id.Bucket]; !ok {
+		kv.Objects[object.Id.Bucket] = map[string]*Object{}
+	}
+	kv.Objects[object.Id.Bucket][object.Id.Key] = &Object{object: object, path: kv.getNestedPath(object.Id)}
 	if config.Config.PersistentStorageEnabled {
 		kv.dbConnection.ObjectChan <- &db.OperationParams{
 			Object: object,
@@ -197,7 +205,10 @@ func (kv *Service) CreateOrUpdateObject(object *protos.Object) error {
 	}
 	kv.ObjectsLock.Lock()
 	defer kv.ObjectsLock.Unlock()
-	kv.Objects[kv.createObjectKey(object)] = object
+	if _, ok := kv.Objects[object.Id.Bucket]; !ok {
+		kv.Objects[object.Id.Bucket] = map[string]*Object{}
+	}
+	kv.Objects[object.Id.Bucket][object.Id.Key] = &Object{object: object, path: kv.getNestedPath(object.Id)}
 	if config.Config.PersistentStorageEnabled {
 		kv.dbConnection.ObjectChan <- &db.OperationParams{
 			Object: object,
@@ -210,18 +221,16 @@ func (kv *Service) CreateOrUpdateObject(object *protos.Object) error {
 func (kv *Service) DeleteObject(objectID *protos.ObjectID) error {
 	kv.ObjectsLock.Lock()
 	defer kv.ObjectsLock.Unlock()
-	fakeObject := &protos.Object{
-		Id: objectID,
-	}
-	objectId := kv.createObjectKey(fakeObject)
-	if _, ok := kv.Objects[objectId]; !ok {
+	if _, ok := kv.Objects[objectID.Bucket][objectID.Key]; !ok {
 		return errors.New("object already deleted")
 	}
-	delete(kv.Objects, objectId)
+	delete(kv.Objects[objectID.Bucket], objectID.Key)
 	if config.Config.PersistentStorageEnabled {
 		kv.dbConnection.ObjectChan <- &db.OperationParams{
-			Object: fakeObject,
-			Type:   db.DELETE,
+			Object: &protos.Object{
+				Id: objectID,
+			},
+			Type: db.DELETE,
 		}
 	}
 	return nil
@@ -229,15 +238,12 @@ func (kv *Service) DeleteObject(objectID *protos.ObjectID) error {
 
 func (kv *Service) DeleteObjectPrefix(objectID *protos.ObjectID) ([]*protos.Object, error) {
 	var objects []*protos.Object
-	objectId := kv.createObjectKey(&protos.Object{
-		Id: objectID,
-	})
 	// this will be slow, needs to be optimized
 	kv.ObjectsLock.Lock()
-	for key, object := range kv.Objects {
-		if strings.HasPrefix(key, objectId) {
-			objects = append(objects, object)
-			delete(kv.Objects, objectId)
+	for key, object := range kv.Objects[objectID.Bucket] {
+		if strings.HasPrefix(key, objectID.Key) {
+			objects = append(objects, object.object)
+			delete(kv.Objects, objectID.Key)
 		}
 	}
 	kv.ObjectsLock.Unlock()
@@ -255,28 +261,64 @@ func (kv *Service) DeleteObjectPrefix(objectID *protos.ObjectID) ([]*protos.Obje
 func (kv *Service) LookupObject(objectID *protos.ObjectID) (*protos.ObjectResponse, error) {
 	kv.ObjectsLock.RLock()
 	defer kv.ObjectsLock.RUnlock()
-	objectId := kv.createObjectKey(&protos.Object{
-		Id: objectID,
-	})
-	if _, ok := kv.Objects[objectId]; !ok {
+	if _, ok := kv.Objects[objectID.Bucket][objectID.Key]; !ok {
 		return nil, errors.New("object does not exist")
 	}
 	return &protos.ObjectResponse{
-		Result: kv.Objects[objectId],
+		Result: kv.Objects[objectID.Bucket][objectID.Key].object,
 	}, nil
 }
 
 func (kv *Service) ListObjects(objectListRequest *protos.ObjectListRequest) (*protos.ObjectListResponse, error) {
 	objects := &protos.ObjectListResponse{Results: []*protos.Object{}, CommonPrefixes: []string{}}
-	objectId := kv.createObjectKey(&protos.Object{
-		Id: objectListRequest.Prefix,
-	})
-	kv.ObjectsLock.RLock()
-	for key, object := range kv.Objects {
-		if strings.HasPrefix(key, objectId) {
-			objects.Results = append(objects.Results, object)
+	if objectListRequest.Prefix == nil || len(objectListRequest.Prefix.Bucket) == 0 {
+		logger.InfoLogger.Println("bucket not set")
+		return objects, nil
+	}
+	var delimiter string
+	if objectListRequest.Delimiter != nil && *objectListRequest.Delimiter != 0 {
+		delimiter = string(*objectListRequest.Delimiter)
+	}
+	tempCommonPrefixes := map[string]bool{}
+	// needs to be optimized
+	if len(delimiter) == 0 {
+		kv.ObjectsLock.RLock()
+		for key, object := range kv.Objects[objectListRequest.Prefix.Bucket] {
+			if strings.HasPrefix(key, objectListRequest.Prefix.Key) {
+				objects.Results = append(objects.Results, object.object)
+			}
+		}
+		kv.ObjectsLock.RUnlock()
+	} else {
+		if len(objectListRequest.Prefix.Key) == 0 {
+			kv.ObjectsLock.RLock()
+			for _, object := range kv.Objects[objectListRequest.Prefix.Bucket] {
+				if len(object.path) == 1 {
+					objects.Results = append(objects.Results, object.object)
+				} else if len(object.path) > 1 {
+					tempCommonPrefixes[object.path[0]] = true
+				}
+			}
+			kv.ObjectsLock.RUnlock()
+		} else {
+			prefixLength := len(strings.Split(objectListRequest.Prefix.Key, delimiter)) + 1
+			kv.ObjectsLock.RLock()
+			for key, object := range kv.Objects[objectListRequest.Prefix.Bucket] {
+				if strings.HasPrefix(key, objectListRequest.Prefix.Key) {
+					objects.Results = append(objects.Results, object.object)
+					if len(object.path) == prefixLength {
+						tempCommonPrefixes[key+object.path[prefixLength-1]] = true
+					}
+				}
+			}
+			kv.ObjectsLock.RUnlock()
 		}
 	}
-	kv.ObjectsLock.RUnlock()
+	if len(tempCommonPrefixes) > 0 {
+		for commonPrefix := range tempCommonPrefixes {
+			objects.CommonPrefixes = append(objects.CommonPrefixes, commonPrefix+commonDelimiter)
+		}
+	}
+
 	return objects, nil
 }
