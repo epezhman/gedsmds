@@ -11,17 +11,20 @@ const commonDelimiter = "/"
 type Service struct {
 	dbConnection *db.Operations
 
-	ObjectStoreConfigsLock *sync.RWMutex
-	ObjectStoreConfigs     map[string]*protos.ObjectStoreConfig
+	objectStoreConfigsLock *sync.RWMutex
+	objectStoreConfigs     map[string]*protos.ObjectStoreConfig
 
-	BucketsLock *sync.RWMutex
-	Buckets     map[string]*protos.Bucket
-
-	ObjectsLock *sync.RWMutex
-	Objects     map[string]map[string]*Object
+	bucketsLock *sync.RWMutex
+	buckets     map[string]*Bucket
 }
 
 type Object struct {
 	path   []string
 	object *protos.Object
+}
+
+type Bucket struct {
+	objectsLock *sync.RWMutex
+	objects     map[string]*Object
+	bucket      *protos.Bucket
 }

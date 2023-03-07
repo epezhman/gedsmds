@@ -15,25 +15,29 @@ func InitKeyValueStoreService() *Service {
 	kvStore := &Service{
 		dbConnection: db.NewOperations(),
 
-		ObjectStoreConfigsLock: &sync.RWMutex{},
-		ObjectStoreConfigs:     map[string]*protos.ObjectStoreConfig{},
+		objectStoreConfigsLock: &sync.RWMutex{},
+		objectStoreConfigs:     map[string]*protos.ObjectStoreConfig{},
 
-		BucketsLock: &sync.RWMutex{},
-		Buckets:     map[string]*protos.Bucket{},
-
-		// possible bottleneck if every item written in the same map
-		ObjectsLock: &sync.RWMutex{},
-		Objects:     map[string]map[string]*Object{},
+		bucketsLock: &sync.RWMutex{},
+		buckets:     map[string]*Bucket{},
 	}
 	go kvStore.populateCache()
 	return kvStore
+}
+
+func (kv *Service) NewBucketIfNotExist(objectID *protos.ObjectID) {
+	if _, ok := kv.buckets[objectID.Bucket]; !ok {
+		kv.buckets[objectID.Bucket] = &Bucket{
+			objectsLock: &sync.RWMutex{},
+			objects:     map[string]*Object{},
+		}
+	}
 }
 
 func (kv *Service) populateCache() {
 	if config.Config.PersistentStorageEnabled && config.Config.RepopulateCacheEnabled {
 		go kv.populateObjectStoreConfig()
 		go kv.populateBuckets()
-		go kv.populateObjects()
 	}
 }
 
@@ -41,11 +45,11 @@ func (kv *Service) populateObjectStoreConfig() {
 	if allObjectStoreConfig, err := kv.dbConnection.GetAllObjectStoreConfig(); err != nil {
 		logger.ErrorLogger.Println(err)
 	} else {
-		kv.ObjectStoreConfigsLock.Lock()
+		kv.objectStoreConfigsLock.Lock()
 		for _, objectStoreConfig := range allObjectStoreConfig {
-			kv.ObjectStoreConfigs[objectStoreConfig.Bucket] = objectStoreConfig
+			kv.objectStoreConfigs[objectStoreConfig.Bucket] = objectStoreConfig
 		}
-		kv.ObjectStoreConfigsLock.Unlock()
+		kv.objectStoreConfigsLock.Unlock()
 	}
 }
 
@@ -53,37 +57,31 @@ func (kv *Service) populateBuckets() {
 	if allBuckets, err := kv.dbConnection.GetAllBuckets(); err != nil {
 		logger.ErrorLogger.Println(err)
 	} else {
-		kv.BucketsLock.Lock()
+		kv.bucketsLock.Lock()
 		for _, bucket := range allBuckets {
-			logger.InfoLogger.Println(bucket)
-			kv.Buckets[bucket.Bucket] = bucket
+			kv.NewBucketIfNotExist(&protos.ObjectID{Bucket: bucket.Bucket})
 		}
-		kv.BucketsLock.Unlock()
+		kv.bucketsLock.Unlock()
 	}
-}
-
-func (kv *Service) populateObjects() {
 	if allObjects, err := kv.dbConnection.GetAllObjects(); err != nil {
 		logger.ErrorLogger.Println(err)
 	} else {
-		kv.ObjectsLock.Lock()
+		kv.bucketsLock.Lock()
 		for _, object := range allObjects {
-			if _, ok := kv.Objects[object.Id.Bucket]; !ok {
-				kv.Objects[object.Id.Bucket] = map[string]*Object{}
-			}
-			kv.Objects[object.Id.Bucket][object.Id.Key] = &Object{object: object, path: kv.getNestedPath(object.Id)}
+			kv.NewBucketIfNotExist(object.Id)
+			kv.buckets[object.Id.Bucket].objects[object.Id.Key] = &Object{object: object, path: kv.getNestedPath(object.Id)}
 		}
-		kv.ObjectsLock.Unlock()
+		kv.bucketsLock.Unlock()
 	}
 }
 
 func (kv *Service) RegisterObjectStore(objectStore *protos.ObjectStoreConfig) error {
-	kv.ObjectStoreConfigsLock.Lock()
-	defer kv.ObjectStoreConfigsLock.Unlock()
-	if _, ok := kv.ObjectStoreConfigs[objectStore.Bucket]; ok {
+	kv.objectStoreConfigsLock.Lock()
+	defer kv.objectStoreConfigsLock.Unlock()
+	if _, ok := kv.objectStoreConfigs[objectStore.Bucket]; ok {
 		return errors.New("config already exists")
 	}
-	kv.ObjectStoreConfigs[objectStore.Bucket] = objectStore
+	kv.objectStoreConfigs[objectStore.Bucket] = objectStore
 	if config.Config.PersistentStorageEnabled {
 		kv.dbConnection.ObjectStoreConfigChan <- &db.OperationParams{
 			ObjectStoreConfig: objectStore,
@@ -94,22 +92,22 @@ func (kv *Service) RegisterObjectStore(objectStore *protos.ObjectStoreConfig) er
 }
 
 func (kv *Service) ListObjectStores() (*protos.AvailableObjectStoreConfigs, error) {
-	kv.ObjectStoreConfigsLock.RLock()
-	defer kv.ObjectStoreConfigsLock.RUnlock()
+	kv.objectStoreConfigsLock.RLock()
+	defer kv.objectStoreConfigsLock.RUnlock()
 	mappings := &protos.AvailableObjectStoreConfigs{Mappings: []*protos.ObjectStoreConfig{}}
-	for _, objectStoreConfig := range kv.ObjectStoreConfigs {
+	for _, objectStoreConfig := range kv.objectStoreConfigs {
 		mappings.Mappings = append(mappings.Mappings, objectStoreConfig)
 	}
 	return mappings, nil
 }
 
 func (kv *Service) CreateBucket(bucket *protos.Bucket) error {
-	kv.BucketsLock.Lock()
-	defer kv.BucketsLock.Unlock()
-	if _, ok := kv.Buckets[bucket.Bucket]; ok {
+	kv.bucketsLock.Lock()
+	defer kv.bucketsLock.Unlock()
+	if _, ok := kv.buckets[bucket.Bucket]; ok {
 		return errors.New("bucket already exists")
 	}
-	kv.Buckets[bucket.Bucket] = bucket
+	kv.NewBucketIfNotExist(&protos.ObjectID{Bucket: bucket.Bucket})
 	if config.Config.PersistentStorageEnabled {
 		kv.dbConnection.BucketChan <- &db.OperationParams{
 			Bucket: bucket,
@@ -120,60 +118,54 @@ func (kv *Service) CreateBucket(bucket *protos.Bucket) error {
 }
 
 func (kv *Service) DeleteBucket(bucket *protos.Bucket) error {
-	kv.BucketsLock.Lock()
-	defer kv.BucketsLock.Unlock()
-	if _, ok := kv.Buckets[bucket.Bucket]; !ok {
+	kv.bucketsLock.Lock()
+	defer kv.bucketsLock.Unlock()
+	if _, ok := kv.buckets[bucket.Bucket]; !ok {
 		return errors.New("bucket already deleted")
 	}
-	delete(kv.Buckets, bucket.Bucket)
+	delete(kv.buckets, bucket.Bucket)
 	if config.Config.PersistentStorageEnabled {
 		kv.dbConnection.BucketChan <- &db.OperationParams{
 			Bucket: bucket,
 			Type:   db.DELETE,
 		}
 	}
+	// delete objects in bucket
 	return nil
 }
 
 func (kv *Service) ListBuckets() (*protos.BucketListResponse, error) {
-	kv.BucketsLock.RLock()
-	defer kv.BucketsLock.RUnlock()
+	kv.bucketsLock.RLock()
+	defer kv.bucketsLock.RUnlock()
 	buckets := &protos.BucketListResponse{Results: []string{}}
-	buckets.Results = append(buckets.Results, maps.Keys(kv.Buckets)...)
+	buckets.Results = append(buckets.Results, maps.Keys(kv.buckets)...)
 	return buckets, nil
 }
 
 func (kv *Service) LookupBucket(bucket *protos.Bucket) error {
-	kv.BucketsLock.RLock()
-	defer kv.BucketsLock.RUnlock()
-	if _, ok := kv.Buckets[bucket.Bucket]; !ok {
+	kv.bucketsLock.RLock()
+	defer kv.bucketsLock.RUnlock()
+	if _, ok := kv.buckets[bucket.Bucket]; !ok {
 		return errors.New("bucket does not exist")
 	}
 	return nil
 }
 
 func (kv *Service) LookupBucketByName(bucketName string) error {
-	kv.BucketsLock.RLock()
-	defer kv.BucketsLock.RUnlock()
-	if _, ok := kv.Buckets[bucketName]; !ok {
+	kv.bucketsLock.RLock()
+	defer kv.bucketsLock.RUnlock()
+	if _, ok := kv.buckets[bucketName]; !ok {
 		return errors.New("bucket does not exist")
 	}
 	return nil
 }
 
 func (kv *Service) CreateObject(object *protos.Object) error {
-	if err := kv.LookupBucketByName(object.Id.Bucket); err != nil {
-		logger.ErrorLogger.Println("bucket does not exist: ", object.Id.Bucket)
-	}
-	kv.ObjectsLock.Lock()
-	defer kv.ObjectsLock.Unlock()
-	if _, ok := kv.Objects[object.Id.Bucket][object.Id.Key]; ok {
-		logger.InfoLogger.Println("object already exists %+v", object)
-	}
-	if _, ok := kv.Objects[object.Id.Bucket]; !ok {
-		kv.Objects[object.Id.Bucket] = map[string]*Object{}
-	}
-	kv.Objects[object.Id.Bucket][object.Id.Key] = &Object{object: object, path: kv.getNestedPath(object.Id)}
+	newObject := &Object{object: object, path: kv.getNestedPath(object.Id)}
+	kv.bucketsLock.Lock()
+	kv.NewBucketIfNotExist(object.Id)
+	kv.buckets[object.Id.Bucket].objects[object.Id.Key] = newObject
+	kv.bucketsLock.Unlock()
 	if config.Config.PersistentStorageEnabled {
 		kv.dbConnection.ObjectChan <- &db.OperationParams{
 			Object: object,
@@ -184,12 +176,11 @@ func (kv *Service) CreateObject(object *protos.Object) error {
 }
 
 func (kv *Service) UpdateObject(object *protos.Object) error {
-	kv.ObjectsLock.Lock()
-	defer kv.ObjectsLock.Unlock()
-	if _, ok := kv.Objects[object.Id.Bucket]; !ok {
-		kv.Objects[object.Id.Bucket] = map[string]*Object{}
-	}
-	kv.Objects[object.Id.Bucket][object.Id.Key] = &Object{object: object, path: kv.getNestedPath(object.Id)}
+	newObject := &Object{object: object, path: kv.getNestedPath(object.Id)}
+	kv.bucketsLock.Lock()
+	kv.NewBucketIfNotExist(object.Id)
+	kv.buckets[object.Id.Bucket].objects[object.Id.Key] = newObject
+	kv.bucketsLock.Unlock()
 	if config.Config.PersistentStorageEnabled {
 		kv.dbConnection.ObjectChan <- &db.OperationParams{
 			Object: object,
@@ -200,15 +191,11 @@ func (kv *Service) UpdateObject(object *protos.Object) error {
 }
 
 func (kv *Service) CreateOrUpdateObject(object *protos.Object) error {
-	if err := kv.LookupBucketByName(object.Id.Bucket); err != nil {
-		logger.ErrorLogger.Println("bucket does not exist: ", object.Id.Bucket)
-	}
-	kv.ObjectsLock.Lock()
-	defer kv.ObjectsLock.Unlock()
-	if _, ok := kv.Objects[object.Id.Bucket]; !ok {
-		kv.Objects[object.Id.Bucket] = map[string]*Object{}
-	}
-	kv.Objects[object.Id.Bucket][object.Id.Key] = &Object{object: object, path: kv.getNestedPath(object.Id)}
+	newObject := &Object{object: object, path: kv.getNestedPath(object.Id)}
+	kv.bucketsLock.Lock()
+	kv.NewBucketIfNotExist(object.Id)
+	kv.buckets[object.Id.Bucket].objects[object.Id.Key] = newObject
+	kv.bucketsLock.Unlock()
 	if config.Config.PersistentStorageEnabled {
 		kv.dbConnection.ObjectChan <- &db.OperationParams{
 			Object: object,
@@ -219,12 +206,17 @@ func (kv *Service) CreateOrUpdateObject(object *protos.Object) error {
 }
 
 func (kv *Service) DeleteObject(objectID *protos.ObjectID) error {
-	kv.ObjectsLock.Lock()
-	defer kv.ObjectsLock.Unlock()
-	if _, ok := kv.Objects[objectID.Bucket][objectID.Key]; !ok {
-		return errors.New("object already deleted")
+	var err error
+	kv.bucketsLock.Lock()
+	if _, ok := kv.buckets[objectID.Bucket].objects[objectID.Key]; !ok {
+		err = errors.New("object already deleted")
+	} else {
+		delete(kv.buckets[objectID.Bucket].objects, objectID.Key)
 	}
-	delete(kv.Objects[objectID.Bucket], objectID.Key)
+	kv.bucketsLock.Unlock()
+	if err != nil {
+		return err
+	}
 	if config.Config.PersistentStorageEnabled {
 		kv.dbConnection.ObjectChan <- &db.OperationParams{
 			Object: &protos.Object{
@@ -239,14 +231,14 @@ func (kv *Service) DeleteObject(objectID *protos.ObjectID) error {
 func (kv *Service) DeleteObjectPrefix(objectID *protos.ObjectID) ([]*protos.Object, error) {
 	var objects []*protos.Object
 	// this will be slow, needs to be optimized
-	kv.ObjectsLock.Lock()
-	for key, object := range kv.Objects[objectID.Bucket] {
+	kv.bucketsLock.Lock()
+	for key, object := range kv.buckets[objectID.Bucket].objects {
 		if strings.HasPrefix(key, objectID.Key) {
 			objects = append(objects, object.object)
-			delete(kv.Objects, objectID.Key)
+			delete(kv.buckets, objectID.Key)
 		}
 	}
-	kv.ObjectsLock.Unlock()
+	kv.bucketsLock.Unlock()
 	if config.Config.PersistentStorageEnabled {
 		for _, object := range objects {
 			kv.dbConnection.ObjectChan <- &db.OperationParams{
@@ -259,13 +251,16 @@ func (kv *Service) DeleteObjectPrefix(objectID *protos.ObjectID) ([]*protos.Obje
 }
 
 func (kv *Service) LookupObject(objectID *protos.ObjectID) (*protos.ObjectResponse, error) {
-	kv.ObjectsLock.RLock()
-	defer kv.ObjectsLock.RUnlock()
-	if _, ok := kv.Objects[objectID.Bucket][objectID.Key]; !ok {
+	kv.bucketsLock.RLock()
+	defer kv.bucketsLock.RUnlock()
+	if kv.buckets[objectID.Bucket] == nil {
+		return nil, errors.New("object does not exist")
+	}
+	if _, ok := kv.buckets[objectID.Bucket].objects[objectID.Key]; !ok {
 		return nil, errors.New("object does not exist")
 	}
 	return &protos.ObjectResponse{
-		Result: kv.Objects[objectID.Bucket][objectID.Key].object,
+		Result: kv.buckets[objectID.Bucket].objects[objectID.Key].object,
 	}, nil
 }
 
@@ -282,28 +277,28 @@ func (kv *Service) ListObjects(objectListRequest *protos.ObjectListRequest) (*pr
 	tempCommonPrefixes := map[string]bool{}
 	// needs to be optimized
 	if len(delimiter) == 0 {
-		kv.ObjectsLock.RLock()
-		for key, object := range kv.Objects[objectListRequest.Prefix.Bucket] {
+		kv.bucketsLock.RLock()
+		for key, object := range kv.buckets[objectListRequest.Prefix.Bucket].objects {
 			if strings.HasPrefix(key, objectListRequest.Prefix.Key) {
 				objects.Results = append(objects.Results, object.object)
 			}
 		}
-		kv.ObjectsLock.RUnlock()
+		kv.bucketsLock.RUnlock()
 	} else {
 		if len(objectListRequest.Prefix.Key) == 0 {
-			kv.ObjectsLock.RLock()
-			for _, object := range kv.Objects[objectListRequest.Prefix.Bucket] {
+			kv.bucketsLock.RLock()
+			for _, object := range kv.buckets[objectListRequest.Prefix.Bucket].objects {
 				if len(object.path) == 1 {
 					objects.Results = append(objects.Results, object.object)
 				} else if len(object.path) > 1 {
 					tempCommonPrefixes[object.path[0]] = true
 				}
 			}
-			kv.ObjectsLock.RUnlock()
+			kv.bucketsLock.RUnlock()
 		} else {
 			prefixLength := len(strings.Split(objectListRequest.Prefix.Key, delimiter)) + 1
-			kv.ObjectsLock.RLock()
-			for key, object := range kv.Objects[objectListRequest.Prefix.Bucket] {
+			kv.bucketsLock.RLock()
+			for key, object := range kv.buckets[objectListRequest.Prefix.Bucket].objects {
 				if strings.HasPrefix(key, objectListRequest.Prefix.Key) {
 					objects.Results = append(objects.Results, object.object)
 					if len(object.path) == prefixLength {
@@ -311,7 +306,7 @@ func (kv *Service) ListObjects(objectListRequest *protos.ObjectListRequest) (*pr
 					}
 				}
 			}
-			kv.ObjectsLock.RUnlock()
+			kv.bucketsLock.RUnlock()
 		}
 	}
 	if len(tempCommonPrefixes) > 0 {
