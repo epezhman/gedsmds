@@ -4,6 +4,7 @@ import (
 	"github.com/IBM/gedsmds/internal/keyvaluestore"
 	"github.com/IBM/gedsmds/internal/logger"
 	"github.com/IBM/gedsmds/protos/protos"
+	"strings"
 	"sync"
 )
 
@@ -16,6 +17,9 @@ func InitService(kvStore *keyvaluestore.Service) *Service {
 
 		subscribedItemsLock: &sync.RWMutex{},
 		subscribedItems:     map[string][]string{},
+
+		subscribedPrefixLock: &sync.RWMutex{},
+		subscribedPrefix:     map[string]map[string][]string{},
 
 		Publication: make(chan *protos.Object, channelBufferSize),
 	}
@@ -34,10 +38,18 @@ func (s *Service) Subscribe(subscription *protos.SubscriptionEvent) error {
 	if err != nil {
 		return err
 	}
-	s.subscribedItemsLock.Lock()
-	s.subscribedItems[subscribedItemId] = append(s.subscribedItems[subscribedItemId], subscription.SubscriberID)
-	s.subscribedItemsLock.Unlock()
-
+	if subscription.SubscriptionType == protos.SubscriptionType_BUCKET || subscription.SubscriptionType == protos.SubscriptionType_OBJECT {
+		s.subscribedItemsLock.Lock()
+		s.subscribedItems[subscribedItemId] = append(s.subscribedItems[subscribedItemId], subscription.SubscriberID)
+		s.subscribedItemsLock.Unlock()
+	} else if subscription.SubscriptionType == protos.SubscriptionType_PREFIX {
+		s.subscribedPrefixLock.Lock()
+		if _, ok := s.subscribedPrefix[subscription.BucketID]; !ok {
+			s.subscribedPrefix[subscription.BucketID] = map[string][]string{}
+		}
+		s.subscribedPrefix[subscription.BucketID][subscribedItemId] = append(s.subscribedPrefix[subscription.BucketID][subscribedItemId], subscription.SubscriberID)
+		s.subscribedPrefixLock.Unlock()
+	}
 	s.subscribersStreamLock.Lock()
 	defer s.subscribersStreamLock.Unlock()
 	if streamer, ok := s.subscriberStreams[subscription.SubscriberID]; ok {
@@ -87,6 +99,15 @@ func (s *Service) matchSubscriptions(subscription *protos.Object) {
 		subscribers = append(subscribers, currentSubscribers...)
 	}
 	s.subscribedItemsLock.RUnlock()
+	s.subscribedPrefixLock.RLock()
+	if subscribersInBucket, ok := s.subscribedPrefix[subscription.Id.Bucket]; ok {
+		for prefix, currentSubscribers := range subscribersInBucket {
+			if strings.HasPrefix(objectID, prefix) {
+				subscribers = append(subscribers, currentSubscribers...)
+			}
+		}
+	}
+	s.subscribedPrefixLock.RUnlock()
 
 	sentSubscriptions := map[string]bool{}
 	for _, subscriberID := range subscribers {
@@ -148,6 +169,11 @@ func (s *Service) removeSubscriber(unsubscription *protos.SubscriptionEvent) err
 		s.removeElementFromSlice(currentSubscribers, unsubscription.SubscriberID)
 	}
 	s.subscribedItemsLock.Unlock()
+	s.subscribedPrefixLock.Lock()
+	if subscribers, ok := s.subscribedPrefix[unsubscription.BucketID]; ok {
+		s.removeElementFromSlice(subscribers[subscribedItemId], unsubscription.SubscriberID)
+	}
+	s.subscribedPrefixLock.Unlock()
 	return nil
 }
 

@@ -39,7 +39,7 @@ func main() {
 	time.Sleep(2 * time.Second)
 	ex.SentUpdateAndCreate()
 	time.Sleep(2 * time.Second)
-	//ex.Unsubscribe()
-	//time.Sleep(2 * time.Second)
+	ex.Unsubscribe()
+	time.Sleep(2 * time.Second)
 	ex.ListObjects2()
 }

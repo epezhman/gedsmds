@@ -23,5 +23,8 @@ type Service struct {
 	subscribedItemsLock *sync.RWMutex
 	subscribedItems     map[string][]string
 
+	subscribedPrefixLock *sync.RWMutex
+	subscribedPrefix     map[string]map[string][]string
+
 	Publication chan *protos.Object
 }

@@ -5,6 +5,8 @@ import (
 	"github.com/IBM/gedsmds/protos/protos"
 )
 
+const commonDelimiter = "/"
+
 func (s *Service) createSubscriptionKey(subscription *protos.SubscriptionEvent) (string, error) {
 	var id string
 	if subscription.SubscriptionType == protos.SubscriptionType_BUCKET {
