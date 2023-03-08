@@ -124,6 +124,7 @@ func (s *Service) removeSubscriberStreamWithLock(streamer *SubscriberStream) {
 	if streamer.stream != nil {
 		streamer.finished <- true
 		streamer.stream = nil
+
 	}
 	s.subscribersStreamLock.Unlock()
 }
