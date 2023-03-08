@@ -18,9 +18,7 @@ func InitService() *Service {
 }
 
 func (s *Service) GetConnectionInformation() string {
-	currentIP := connpool.GetOutboundIP()
-	logger.InfoLogger.Println("found my IP:", currentIP)
-	return currentIP
+	return connpool.GetOutboundIP()
 }
 
 func (s *Service) RegisterObjectStore(objectStore *protos.ObjectStoreConfig) error {

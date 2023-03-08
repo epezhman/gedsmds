@@ -8,15 +8,15 @@ WORKDIR /gedsmds
 ADD . /gedsmds/
 COPY ./env.secret /gedsmds/env
 
-RUN make tidy
 RUN make build-mds
 
-FROM alpine:latest
+FROM alpine:3.17
 
 ENV GEDSMDS_SERVER_PORT=50001
 
 WORKDIR /gedsmds
-COPY --from=builder /gedsmds/build/linux/gedsmds .
+COPY --from=builder /gedsmds/build/gedsmds_linux/gedsmds .
+COPY --from=builder /gedsmds/configs/app.env.secret ./app.env
 
 EXPOSE $GEDSMDS_SERVER_PORT
 CMD ["./gedsmds"]

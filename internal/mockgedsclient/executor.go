@@ -304,7 +304,11 @@ func (e *Executor) ListObjects() {
 		logger.ErrorLogger.Println(err)
 	}
 	client := protos.NewMetadataServiceClient(conn.ClientConn)
-	result, err := client.List(context.Background(), &protos.ObjectListRequest{})
+	result, err := client.List(context.Background(), &protos.ObjectListRequest{
+		Prefix: &protos.ObjectID{
+			Bucket: "b2",
+		},
+	})
 	if err != nil {
 		logger.ErrorLogger.Println(err)
 	}
@@ -362,10 +366,10 @@ func (e *Executor) SentUpdateAndCreate() {
 	if err != nil {
 		logger.InfoLogger.Println(err)
 	}
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 3; i++ {
 		object := &protos.Object{
 			Id: &protos.ObjectID{
-				Key:    "file" + strconv.Itoa(i),
+				Key:    "path1/path2/path3/file" + strconv.Itoa(i),
 				Bucket: "b2",
 			},
 			Info: &protos.ObjectInfo{
@@ -439,6 +443,55 @@ func (e *Executor) Unsubscribe() {
 		logger.ErrorLogger.Println(err)
 	}
 	logger.InfoLogger.Println(result2.Code)
+
+	if errCon := conn.Close(); errCon != nil {
+		logger.ErrorLogger.Println(errCon)
+	}
+}
+
+func (e *Executor) ListObjects2() {
+	conn, err := e.mdsConnections["127.0.0.1"].Get(context.Background())
+	if conn == nil || err != nil {
+		logger.ErrorLogger.Println(err)
+	}
+	client := protos.NewMetadataServiceClient(conn.ClientConn)
+
+	result, err := client.List(context.Background(), &protos.ObjectListRequest{
+		Prefix: &protos.ObjectID{
+			Bucket: "b2",
+			Key:    "path1/path2/",
+		},
+	})
+	if err != nil {
+		logger.ErrorLogger.Println(err)
+	}
+	logger.InfoLogger.Println(result)
+
+	var del int32
+	del = 47
+
+	result, err = client.List(context.Background(), &protos.ObjectListRequest{
+		Prefix: &protos.ObjectID{
+			Bucket: "b2",
+		},
+		Delimiter: &del,
+	})
+	if err != nil {
+		logger.ErrorLogger.Println(err)
+	}
+	logger.InfoLogger.Println(result)
+
+	result, err = client.List(context.Background(), &protos.ObjectListRequest{
+		Prefix: &protos.ObjectID{
+			Bucket: "b2",
+			Key:    "path1/path2/",
+		},
+		Delimiter: &del,
+	})
+	if err != nil {
+		logger.ErrorLogger.Println(err)
+	}
+	logger.InfoLogger.Println(result)
 
 	if errCon := conn.Close(); errCon != nil {
 		logger.ErrorLogger.Println(errCon)

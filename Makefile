@@ -6,7 +6,7 @@ GO_PATH := $(shell which go)
 
 ifeq ($(UNAME), Linux)
 MDS_BUILD_PATH = ${MDS_BUILD_PATH_LINUX}
-GO_PATH = ${GO_PATH_LINUX}
+#GO_PATH = ${GO_PATH_LINUX}
 SOURCE = .
 endif
 
@@ -53,7 +53,7 @@ build: clean build-mds
 ## build-mds: build the MDS component (OS-dependent)
 build-mds:
 	@echo "Building MDS ..."
-	@${GO_PATH} build -o ${MDS_BUILD_PATH}${MDS_BINARY} ./cmd/mds
+	@${GO_PATH} build -o ${MDS_BUILD_PATH}${MDS_BINARY} ./cmd/mds/*.go
 
 ## run-mds: run the MDS component
 run-mds:
@@ -95,3 +95,18 @@ protos:
 create-certificates:
 	@echo "Creating the certificates and keys ..."
 	@PROJECT_ABSOLUTE_PATH=${PROJECT_ABSOLUTE_PATH} ./scripts/create_certificates.sh
+
+
+.PHONY: build-docker-images
+## build-docker-images: build docker images
+build-docker-images:
+	@echo "Building Docker images ..."
+	@docker build --force-rm -t ${DOCKER_NS_ENV}/gedsmds -f ./deployment/docker/images/gedsmds.dockerfile .
+	@docker tag ${DOCKER_NS_ENV}/gedsmds ${DOCKER_NS_ENV}/gedsmds:${DOCKER_TAG_ENV}
+
+.PHONY: push-docker-images
+## push-docker-images: push docker images
+push-docker-images:
+	@echo "Pushing Docker images ..."
+	@docker login --username ${DOCKER_USERNAME_ENV} --password ${DOCKER_PASSWORD_ENV}
+	@docker push ${DOCKER_NS_ENV}/gedsmds:${DOCKER_TAG_ENV}

@@ -10,7 +10,7 @@ const channelBufferSize = 200
 
 type SubscriberStream struct {
 	stream               protos.MetadataService_SubscribeStreamServer
-	finished             chan<- bool
+	finished             chan bool
 	subscriptionsCounter int
 }
 

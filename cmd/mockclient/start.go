@@ -19,11 +19,11 @@ func main() {
 	ex.CreateBucket()
 	ex.ListBuckets()
 	ex.LookUpBucket()
-	ex.DeleteBucket()
+	//ex.DeleteBucket()
 	ex.ListBuckets()
 	ex.LookUpBucket()
 
-	ex.Lookup()
+	//ex.Lookup()
 	ex.CreateObject()
 	ex.ListObjects()
 	ex.UpdateObject()
@@ -31,7 +31,7 @@ func main() {
 	ex.DeleteObject()
 	ex.Lookup()
 	ex.DeletePrefix()
-	ex.ListObjects()
+	//ex.ListObjects()
 
 	ex.Subscribe()
 	time.Sleep(2 * time.Second)
@@ -39,6 +39,7 @@ func main() {
 	time.Sleep(2 * time.Second)
 	ex.SentUpdateAndCreate()
 	time.Sleep(2 * time.Second)
-	ex.Unsubscribe()
-	time.Sleep(2 * time.Second)
+	//ex.Unsubscribe()
+	//time.Sleep(2 * time.Second)
+	ex.ListObjects2()
 }

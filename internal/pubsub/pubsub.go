@@ -52,26 +52,19 @@ func (s *Service) Subscribe(subscription *protos.SubscriptionEvent) error {
 
 func (s *Service) SubscribeStream(subscription *protos.SubscriptionStreamEvent,
 	stream protos.MetadataService_SubscribeStreamServer) error {
-	var finished chan bool
+	finished := make(chan bool, 2)
 	s.subscribersStreamLock.Lock()
 	if streamer, ok := s.subscriberStreams[subscription.SubscriberID]; !ok {
-		finished = make(chan bool)
 		s.subscriberStreams[subscription.SubscriberID] = &SubscriberStream{
 			stream:   stream,
 			finished: finished,
 		}
 	} else {
-		if streamer.stream == nil {
-			finished = make(chan bool)
-			streamer.stream = stream
-			streamer.finished = finished
-		} else {
-			s.subscribersStreamLock.Unlock()
-			return nil
-		}
+		s.removeSubscriberStream(streamer)
+		streamer.stream = stream
+		streamer.finished = finished
 	}
 	s.subscribersStreamLock.Unlock()
-
 	cntx := stream.Context()
 	for {
 		select {
@@ -115,7 +108,7 @@ func (s *Service) sendSubscriptions(subscription *protos.Object, subscriberID st
 	}
 	if err := streamer.stream.Send(subscription); err != nil {
 		logger.ErrorLogger.Println("could not send the proposal response to subscriber " + subscriberID)
-		s.removeSubscriberStream(streamer)
+		s.removeSubscriberStreamWithLock(streamer)
 	}
 }
 
@@ -124,6 +117,15 @@ func (s *Service) removeSubscriberStream(streamer *SubscriberStream) {
 		streamer.finished <- true
 		streamer.stream = nil
 	}
+}
+
+func (s *Service) removeSubscriberStreamWithLock(streamer *SubscriberStream) {
+	s.subscribersStreamLock.Lock()
+	if streamer.stream != nil {
+		streamer.finished <- true
+		streamer.stream = nil
+	}
+	s.subscribersStreamLock.Unlock()
 }
 
 func (s *Service) removeSubscriber(unsubscription *protos.SubscriptionEvent) error {

@@ -20,11 +20,13 @@ func init() {
 	var err error
 	Config, err = LoadConfig()
 	if err != nil {
-		logger.FatalLogger.Fatalln(err)
+		//logger.FatalLogger.Fatalln(err)
+		logger.ErrorLogger.Println(err)
 	}
 }
 
 func LoadConfig() (*Configuration, error) {
+	viper.AddConfigPath(".")
 	viper.AddConfigPath("./configs")
 	viper.SetConfigName("app")
 	viper.SetConfigType("env")

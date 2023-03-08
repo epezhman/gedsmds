@@ -28,6 +28,7 @@ func InitKeyValueStoreService() *Service {
 func (kv *Service) NewBucketIfNotExist(objectID *protos.ObjectID) {
 	if _, ok := kv.buckets[objectID.Bucket]; !ok {
 		kv.buckets[objectID.Bucket] = &Bucket{
+			bucket:      &protos.Bucket{Bucket: objectID.Bucket},
 			objectsLock: &sync.RWMutex{},
 			objects:     map[string]*Object{},
 		}
@@ -206,17 +207,11 @@ func (kv *Service) CreateOrUpdateObject(object *protos.Object) error {
 }
 
 func (kv *Service) DeleteObject(objectID *protos.ObjectID) error {
-	var err error
 	kv.bucketsLock.Lock()
-	if _, ok := kv.buckets[objectID.Bucket].objects[objectID.Key]; !ok {
-		err = errors.New("object already deleted")
-	} else {
+	if _, ok := kv.buckets[objectID.Bucket]; ok {
 		delete(kv.buckets[objectID.Bucket].objects, objectID.Key)
 	}
 	kv.bucketsLock.Unlock()
-	if err != nil {
-		return err
-	}
 	if config.Config.PersistentStorageEnabled {
 		kv.dbConnection.ObjectChan <- &db.OperationParams{
 			Object: &protos.Object{
@@ -231,11 +226,14 @@ func (kv *Service) DeleteObject(objectID *protos.ObjectID) error {
 func (kv *Service) DeleteObjectPrefix(objectID *protos.ObjectID) ([]*protos.Object, error) {
 	var objects []*protos.Object
 	// this will be slow, needs to be optimized
+	// needs the cache to be repopulated
 	kv.bucketsLock.Lock()
-	for key, object := range kv.buckets[objectID.Bucket].objects {
-		if strings.HasPrefix(key, objectID.Key) {
-			objects = append(objects, object.object)
-			delete(kv.buckets, objectID.Key)
+	if _, ok := kv.buckets[objectID.Bucket]; ok {
+		for key, object := range kv.buckets[objectID.Bucket].objects {
+			if strings.HasPrefix(key, objectID.Key) {
+				objects = append(objects, object.object)
+				delete(kv.buckets, objectID.Key)
+			}
 		}
 	}
 	kv.bucketsLock.Unlock()
@@ -278,31 +276,37 @@ func (kv *Service) ListObjects(objectListRequest *protos.ObjectListRequest) (*pr
 	// needs to be optimized
 	if len(delimiter) == 0 {
 		kv.bucketsLock.RLock()
-		for key, object := range kv.buckets[objectListRequest.Prefix.Bucket].objects {
-			if strings.HasPrefix(key, objectListRequest.Prefix.Key) {
-				objects.Results = append(objects.Results, object.object)
+		if _, ok := kv.buckets[objectListRequest.Prefix.Bucket]; ok {
+			for key, object := range kv.buckets[objectListRequest.Prefix.Bucket].objects {
+				if strings.HasPrefix(key, objectListRequest.Prefix.Key) {
+					objects.Results = append(objects.Results, object.object)
+				}
 			}
 		}
 		kv.bucketsLock.RUnlock()
 	} else {
 		if len(objectListRequest.Prefix.Key) == 0 {
 			kv.bucketsLock.RLock()
-			for _, object := range kv.buckets[objectListRequest.Prefix.Bucket].objects {
-				if len(object.path) == 1 {
-					objects.Results = append(objects.Results, object.object)
-				} else if len(object.path) > 1 {
-					tempCommonPrefixes[object.path[0]] = true
+			if _, ok := kv.buckets[objectListRequest.Prefix.Bucket]; ok {
+				for _, object := range kv.buckets[objectListRequest.Prefix.Bucket].objects {
+					if len(object.path) == 1 {
+						objects.Results = append(objects.Results, object.object)
+					} else if len(object.path) > 1 {
+						tempCommonPrefixes[object.path[0]] = true
+					}
 				}
 			}
 			kv.bucketsLock.RUnlock()
 		} else {
 			prefixLength := len(strings.Split(objectListRequest.Prefix.Key, delimiter)) + 1
 			kv.bucketsLock.RLock()
-			for key, object := range kv.buckets[objectListRequest.Prefix.Bucket].objects {
-				if strings.HasPrefix(key, objectListRequest.Prefix.Key) {
-					objects.Results = append(objects.Results, object.object)
-					if len(object.path) == prefixLength {
-						tempCommonPrefixes[key+object.path[prefixLength-1]] = true
+			if _, ok := kv.buckets[objectListRequest.Prefix.Bucket]; ok {
+				for key, object := range kv.buckets[objectListRequest.Prefix.Bucket].objects {
+					if strings.HasPrefix(key, objectListRequest.Prefix.Key) {
+						objects.Results = append(objects.Results, object.object)
+						if len(object.path) == prefixLength {
+							tempCommonPrefixes[strings.Join(object.path[:prefixLength-1], delimiter)] = true
+						}
 					}
 				}
 			}

@@ -31,6 +31,7 @@ func main() {
 	serviceInstance := mdsservice.NewService()
 	protos.RegisterMetadataServiceServer(grpcServer, serviceInstance)
 	logger.InfoLogger.Println("Metadata Server is listening on port", config.Config.MDSPort)
+	logger.InfoLogger.Println("My IP:", serviceInstance.GetIP())
 	err = grpcServer.Serve(lis)
 	if err != nil {
 		logger.FatalLogger.Fatalln(err)
