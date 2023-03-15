@@ -10,7 +10,7 @@ var Config *Configuration
 
 type Configuration struct {
 	UUID                     string `mapstructure:"UUID"`
-	MDSPort                  string `mapstructure:"METADATASERVER_PORT"`
+	MDSPort                  string `mapstructure:"METADATA_SERVER_PORT"`
 	PubSubEnabled            bool   `mapstructure:"PUBSUB_ENABLED"`
 	PersistentStorageEnabled bool   `mapstructure:"PERSISTENT_STORAGE_ENABLED"`
 	RepopulateCacheEnabled   bool   `mapstructure:"REPOPULATE_CACHE_ENABLED"`
@@ -20,8 +20,7 @@ func init() {
 	var err error
 	Config, err = LoadConfig()
 	if err != nil {
-		//logger.FatalLogger.Fatalln(err)
-		logger.ErrorLogger.Println(err)
+		logger.FatalLogger.Fatalln(err)
 	}
 }
 

@@ -9,6 +9,4 @@ build
 configs
 !configs/app.env.secret
 env
-terraform.tfvars
 data
-certificates

@@ -6,8 +6,10 @@ GO_PATH := $(shell which go)
 
 ifeq ($(UNAME), Linux)
 MDS_BUILD_PATH = ${MDS_BUILD_PATH_LINUX}
-#GO_PATH = ${GO_PATH_LINUX}
 SOURCE = .
+ifeq ($(GO_PATH),)
+	GO_PATH = ${GO_PATH_LINUX}
+endif
 endif
 
 ifeq ($(UNAME), Darwin)
@@ -29,6 +31,11 @@ help:
 ## tidy: tidy up go modules
 tidy:
 	@${GO_PATH} mod tidy
+
+.PHONY: vendor
+## vendor: vendoring the modules
+vendor:
+	@${GO_PATH} mod vendor -v
 
 .PHONY: clean
 ## clean: clean build path for Darwin
@@ -89,12 +96,6 @@ protos:
 	@mkdir ./protos/protos
 	@protoc -I ./protos ./protos/*.proto  --go_out=./protos/protos
 	@protoc -I ./protos ./protos/*.proto  --go-grpc_out=require_unimplemented_servers=false:./protos/protos
-
-.PHONY: create-certificates
-## create-certificates: create certificates
-create-certificates:
-	@echo "Creating the certificates and keys ..."
-	@PROJECT_ABSOLUTE_PATH=${PROJECT_ABSOLUTE_PATH} ./scripts/create_certificates.sh
 
 
 .PHONY: build-docker-images

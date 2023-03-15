@@ -85,11 +85,6 @@ message SubscriptionStreamEvent {
   string subscriberID = 1;
 }
 
-//message SubscriptionResponse {
-//  SubscriptionType subscriptionType = 1;
-//  Object object = 2;
-//}
-
 service MetadataService {
   rpc GetConnectionInformation(EmptyParams) returns (ConnectionInformation);
   rpc RegisterObjectStore(ObjectStoreConfig) returns (StatusResponse);

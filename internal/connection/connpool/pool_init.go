@@ -17,15 +17,7 @@ var KACP = keepalive.ClientParameters{
 }
 
 func factoryNode(ip string) (*grpc.ClientConn, error) {
-	//configTLS := &tls.Config{
-	//	InsecureSkipVerify: false,
-	//	RootCAs:            certificates.CAs,
-	//}
-	//opts := []grpc.DialOption{grpc.WithTransportCredentials(credentials.NewTLS(configTLS)), grpc.WithKeepaliveParams(KACP),
-	//	grpc.WithDefaultCallOptions(grpc.UseCompressor("gzip")),
-	//	// https://chromium.googlesource.com/external/github.com/grpc/grpc-go/+/HEAD/Documentation/encoding.md
-	//}
-	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithKeepaliveParams(KACP)}
 	conn, err := grpc.Dial(ip+config.Config.MDSPort, opts...)
 	if err != nil {
 		logger.FatalLogger.Fatalln("Failed to start gRPC connection:", err)

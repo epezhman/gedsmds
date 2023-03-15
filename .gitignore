@@ -2,9 +2,6 @@
 # Project sprecific gitignores
 ###################################################
 
-/deployment/terraform/*.sh
-terraform.tfvars
-/deployment/ansible/ansible_remote/inventory_dir/inventory
 app.env
 *.db
 /build/*
@@ -18,9 +15,6 @@ endpoints_remote.yml
 privateKey.pem
 publicKey.pem
 /logs/*
-/certificates/*
-!/certificates/generate_cert.go
-!/certificates/endpoints_local
 ./idea/*
 
 ###################################################
@@ -148,7 +142,6 @@ cmake-build-*/
 
 # Editor-based Rest Client
 .idea/httpRequests
-
 
 # Vagrant
 .vagrant
