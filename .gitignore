@@ -15,7 +15,7 @@ endpoints_remote.yml
 privateKey.pem
 publicKey.pem
 /logs/*
-./.idea/*
+/.idea/*
 
 ###################################################
 # General gitignore for the used technologiels
